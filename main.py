@@ -1,14 +1,10 @@
+# main.py
 import logging
 import asyncio
 import signal
 import sys
 from telegram.ext import Application, CommandHandler
 from datetime import time
-from fiturBot.attendance_bot import AttendanceBot
-from fiturBot.handlers import (
-    start, status, test_connection, get_my_info, register, absen, admin_stats, reset_attendance, force_attendance_check, export_data,
-    manual_kick, list_warnings, classroom_reminder_now, class_reminder_now, check_topics
-)
 
 # Setup logging
 logging.basicConfig(
@@ -31,14 +27,23 @@ class BotManager:
         try:
             # Test koneksi terlebih dahulu
             logger.info("Testing koneksi Google Sheets...")
+            from bot.attendance_bot import AttendanceBot
             bot = AttendanceBot()
             bot.get_student_data()
             
             # Buat application Telegram
+            from config import BOT_TOKEN
             self.application = Application.builder().token(BOT_TOKEN).build()
             
             # Add error handler
             self.application.add_error_handler(self.error_handler)
+            
+            # Import handlers
+            from bot.handlers import (
+                start, status, test_connection, get_my_info, register, absen,
+                admin_help, admin_stats, reset_attendance, force_attendance_check, export_data,
+                manual_kick, list_warnings, classroom_reminder_now, class_reminder_now, check_topics
+            )
             
             # ==================== 🎯 COMMAND UNTUK SEMUA USER ====================
             self.application.add_handler(CommandHandler("start", start))
@@ -49,6 +54,7 @@ class BotManager:
             self.application.add_handler(CommandHandler("register", register))
             
             # ==================== 👑 COMMAND UNTUK ADMIN ONLY ====================
+            self.application.add_handler(CommandHandler("admin_help", admin_help))
             self.application.add_handler(CommandHandler("admin_stats", admin_stats))
             self.application.add_handler(CommandHandler("reset_attendance", reset_attendance))
             self.application.add_handler(CommandHandler("force_check", force_attendance_check))
@@ -95,16 +101,24 @@ class BotManager:
             await self.setup_bot()
         
         logger.info("🚀 Starting bot polling...")
-        await self.application.run_polling()
+        try:
+            await self.application.run_polling()
+        except Exception as e:
+            logger.error(f"❌ Error during polling: {e}")
+            raise
 
     async def stop_bot(self):
         """Stop bot gracefully"""
         if self.application and self.is_running:
             logger.info("🛑 Stopping bot gracefully...")
-            await self.application.stop()
-            await self.application.shutdown()
-            self.is_running = False
-            logger.info("✅ Bot stopped successfully")
+            try:
+                await self.application.stop()
+                await self.application.shutdown()
+            except Exception as e:
+                logger.error(f"Error during shutdown: {e}")
+            finally:
+                self.is_running = False
+                logger.info("✅ Bot stopped successfully")
 
 # Global instance
 bot_manager = BotManager()
@@ -123,19 +137,21 @@ async def main():
 def signal_handler(signum, frame):
     """Handle shutdown signals"""
     logger.info(f"Received signal {signum}, shutting down...")
-    asyncio.create_task(bot_manager.stop_bot())
+    # Don't try to stop here, just let the process exit
 
 if __name__ == '__main__':
+    # Import config untuk validasi
+    try:
+        from config import validate_config
+        if not validate_config():
+            sys.exit(1)
+    except Exception as e:
+        logger.error(f"Config validation failed: {e}")
+        sys.exit(1)
+    
     # Setup signal handlers
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
-    
-    # Import config
-    try:
-        from config import BOT_TOKEN
-    except ImportError:
-        logger.error("❌ config.py not found! Please create config.py with BOT_TOKEN")
-        sys.exit(1)
     
     # Run bot
     asyncio.run(main())
