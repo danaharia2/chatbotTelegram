@@ -54,7 +54,6 @@ class BotManager:
             self.application.add_handler(CommandHandler("register", register))
             
             # ==================== 👑 COMMAND UNTUK ADMIN ONLY ====================
-            self.application.add_handler(CommandHandler("admin_help", admin_help))
             self.application.add_handler(CommandHandler("admin_stats", admin_stats))
             self.application.add_handler(CommandHandler("reset_attendance", reset_attendance))
             self.application.add_handler(CommandHandler("force_check", force_attendance_check))
@@ -155,3 +154,4 @@ if __name__ == '__main__':
     
     # Run bot
     asyncio.run(main())
+
