@@ -215,3 +215,44 @@ async def check_topics(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
     except Exception as e:
         await update.message.reply_text(f"❌ Error: {e}")
+
+@admin_required
+async def admin_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Help command khusus admin"""
+    help_message = (
+        "👑 **PANDUAN PERINTAH ADMIN**\n\n"
+        
+        "📊 **MANAJEMEN DATA:**\n"
+        "• `/admin_stats` - Lihat statistik lengkap\n"
+        "• `/export_data` - Export data ke CSV\n"
+        "• `/list_warnings` - Lihat daftar peringatan\n\n"
+        
+        "🔄 **RESET & MAINTENANCE:**\n"
+        "• `/reset_attendance confirm` - Reset SEMUA data kehadiran\n"
+        "• `/force_check` - Paksa pengecekan kehadiran otomatis\n\n"
+        
+        "👤 **MANAJEMEN MURID:**\n"
+        "• `/manual_kick 123456789 Alasan` - Keluarkan murid manual\n"
+        "   Contoh: `/manual_kick 123456789 Alpha 3 kali`\n\n"
+        
+        "🔔 **SISTEM REMINDER:**\n"
+        "• `/classroom_reminder` - Kirim reminder tugas sekarang\n"
+        "• `/class_reminder` - Kirim reminder kelas sekarang\n\n"
+        
+        "⚙️ **SISTEM & INFO:**\n"
+        "• `/check_topics` - Cek informasi topik grup\n"
+        "• `/test` - Test koneksi Google Sheets\n\n"
+        
+        "📋 **FITUR OTOMATIS:**\n"
+        "• Auto-kick: Alpha 3x atau tidak hadir berturut-turut\n"
+        "• Reminder tugas: Setiap hari jam 10:00\n"
+        "• Reminder kelas: Minggu 18:00 & Senin 10:00\n"
+        "• Pengecekan: Setiap hari jam 08:00 & 18:00\n\n"
+        
+        "💡 **Tips Admin:**\n"
+        "• Gunakan /force_check untuk tes fitur auto-kick\n"
+        "• Export data secara berkala untuk backup\n"
+        "• Cek /list_warnings untuk monitoring murid"
+    )
+    
+    await update.message.reply_text(help_message)
