@@ -40,8 +40,7 @@ class BotManager:
             
             # Import handlers
             from fiturBot.handlers import (
-                start, status, test_connection, get_my_info, register, absen,
-                admin_help, admin_stats, reset_attendance, force_attendance_check, export_data,
+                start, status, test_connection, get_my_info, register, absen, admin_stats, reset_attendance, force_attendance_check, export_data,
                 manual_kick, list_warnings, classroom_reminder_now, class_reminder_now, check_topics
             )
             
@@ -154,4 +153,5 @@ if __name__ == '__main__':
     
     # Run bot
     asyncio.run(main())
+
 
