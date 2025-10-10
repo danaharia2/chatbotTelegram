@@ -15,12 +15,16 @@ def is_local():
 
 # Load .env hanya jika di local
 if is_local():
-    from dotenv import load_dotenv
-    load_dotenv()
+    try:
+        from dotenv import load_dotenv
+        load_dotenv()
+        print("✅ Loaded .env file for local development")
+    except ImportError:
+        print("⚠️  python-dotenv not installed, skipping .env load")
 
 # ==================== TELEGRAM CONFIG ====================
 BOT_TOKEN = os.getenv('BOT_TOKEN')
-#GROUP_CHAT_ID = int(os.getenv('GROUP_CHAT_ID'))  # Convert to integer
+
 GROUP_CHAT_ID_STR = os.getenv('GROUP_CHAT_ID', '')
 try:
     GROUP_CHAT_ID = int(GROUP_CHAT_ID_STR) if GROUP_CHAT_ID_STR else None
@@ -32,15 +36,12 @@ admin_ids_str = os.getenv('ADMIN_IDS', '')
 #ADMIN_IDS = [int(id.strip()) for id in admin_ids_str.split(',') if id.strip()] if admin_ids_str else []
 if admin_ids_str:
     try:
-        # Handle format: "123456789,987654321" ATAU "[123456789,987654321]"
         if admin_ids_str.startswith('[') and admin_ids_str.endswith(']'):
-            # Format: "[123456789,987654321]"
             ADMIN_IDS = [int(id.strip()) for id in admin_ids_str[1:-1].split(',') if id.strip()]
         else:
-            # Format: "123456789,987654321"
             ADMIN_IDS = [int(id.strip()) for id in admin_ids_str.split(',') if id.strip()]
-    except (ValueError, TypeError):
-        ADMIN_IDS = []
+    except (ValueError, TypeError) as e:
+        print(f"⚠️  Error parsing ADMIN_IDS: {e}")
 else:
     ADMIN_IDS = []
 
@@ -112,14 +113,23 @@ def setup_credentials():
             return None
     
     # Opsi 3: CREDENTIALS_FILE environment variable
-    elif 'CREDENTIALS_FILE' in os.environ and os.path.exists(os.environ['CREDENTIALS_FILE']):
-        print(f"✅ Using CREDENTIALS_FILE: {os.environ['CREDENTIALS_FILE']}")
-        return os.environ['CREDENTIALS_FILE']
+    elif 'CREDENTIALS_FILE' in os.environ:
+        creds_file = os.environ['CREDENTIALS_FILE']
+        if os.path.exists(creds_file):
+            print(f"✅ Using CREDENTIALS_FILE: {creds_file}")
+            return creds_file
+        else:
+            print(f"❌ CREDENTIALS_FILE not found: {creds_file}")
+            return None
     
     else:
         print("❌ No credentials configuration found!")
+        print("   Available options:")
+        print("   - credentials.json file")
+        print("   - CREDENTIALS_BASE64 environment variable") 
+        print("   - CREDENTIALS_FILE environment variable")
         return None
-
+    
 # Setup credentials
 CREDENTIALS_FILE = setup_credentials()
 
@@ -139,22 +149,34 @@ def validate_config():
     errors = []
     warnings = []
     
+    # Tampilkan environment info
+    if is_railway():
+        print("🚄 Running on RAILWAY")
+    else:
+        print("💻 Running LOCALLY")
+    
     # Validasi required variables
     required_vars = {
         'BOT_TOKEN': BOT_TOKEN,
         'GROUP_CHAT_ID': GROUP_CHAT_ID,
         'SPREADSHEET_URL': SPREADSHEET_URL,
-        'CREDENTIALS_FILE': CREDENTIALS_FILE,
     }
     
     for var_name, var_value in required_vars.items():
         if not var_value:
             errors.append(f"{var_name} tidak ditemukan di .env")
+        else:
+            print(f"✅ {var_name}: {'***' if 'TOKEN' in var_name else var_value}")
     
     # Validasi file credentials
-    if not os.path.exists(CREDENTIALS_FILE):
-        errors.append(f"File {CREDENTIALS_FILE} tidak ditemukan")
-    
+    if not CREDENTIALS_FILE:
+        errors.append("CREDENTIALS_FILE tidak dikonfigurasi")
+    else:
+        print(f"✅ CREDENTIALS_FILE: {CREDENTIALS_FILE}")
+        # Cek file exists hanya jika CREDENTIALS_FILE adalah string path
+        if isinstance(CREDENTIALS_FILE, str) and not os.path.exists(CREDENTIALS_FILE):
+            errors.append(f"File {CREDENTIALS_FILE} tidak ditemukan")
+
     # Validasi format GROUP_CHAT_ID
     if GROUP_CHAT_ID and GROUP_CHAT_ID > 0:
         errors.append("GROUP_CHAT_ID harus negatif untuk grup super (format: -1001234567890)")
@@ -162,6 +184,8 @@ def validate_config():
     # Validasi ADMIN_IDS
     if not ADMIN_IDS:
         warnings.append("ADMIN_IDS tidak dikonfigurasi - beberapa fitur admin tidak akan bekerja")
+    else:
+        print(f"✅ ADMIN_IDS: {ADMIN_IDS}")
     
     # Validasi Google Classroom (opsional, hanya warning)
     if CLASSROOM_COURSE_ID == "your_classroom_course_id_here":
@@ -169,12 +193,6 @@ def validate_config():
     
     if GOOGLE_MEET_LINK == "meet.google.com/your-actual-meet-code":
         warnings.append("GOOGLE_MEET_LINK masih menggunakan nilai default")
-
-    # Tampilkan environment info
-    if is_railway():
-        print("🚄 Running on RAILWAY")
-    else:
-        print("💻 Running LOCALLY")
     
     # Tampilkan warnings
     if warnings:
@@ -186,6 +204,7 @@ def validate_config():
         print("\n❌ ERROR KONFIGURASI:")
         for error in errors:
             print(f"   • {error}")
+        
         print("\n📝 CARA PERBAIKI:")
         if is_railway():
             print("   • Buka Railway Dashboard → Variables")
@@ -195,10 +214,11 @@ def validate_config():
             print("   • Pastikan file .env sudah diisi dengan benar")
             print("   • Pastikan credentials.json ada di folder yang sama")
         
-        exit(1)
+        return False
 
-print("✅ Konfigurasi berhasil divalidasi!")
+    print("✅ Konfigurasi berhasil divalidasi!")
+    return True
 
 # Jalankan validasi saat module di-load
 if __name__ != '__name__':
-    validate_config()
+    config_valid = validate_config()
