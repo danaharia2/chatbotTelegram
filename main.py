@@ -27,7 +27,7 @@ class BotManager:
         try:
             # Test koneksi terlebih dahulu
             logger.info("Testing koneksi Google Sheets...")
-            from bot.attendance_bot import AttendanceBot
+            from fiturBot.attendance_bot import AttendanceBot
             bot = AttendanceBot()
             bot.get_student_data()
             
@@ -39,7 +39,7 @@ class BotManager:
             self.application.add_error_handler(self.error_handler)
             
             # Import handlers
-            from bot.handlers import (
+            from fiturBot.handlers import (
                 start, status, test_connection, get_my_info, register, absen,
                 admin_help, admin_stats, reset_attendance, force_attendance_check, export_data,
                 manual_kick, list_warnings, classroom_reminder_now, class_reminder_now, check_topics
