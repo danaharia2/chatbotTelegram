@@ -3,6 +3,7 @@ import os
 from dotenv import load_dotenv
 import base64
 import json
+import sys
 
 # ==================== ENVIRONMENT DETECTION ====================
 def is_railway():
@@ -144,6 +145,21 @@ SCOPES = [
 ]
 
 # ==================== VALIDATION ====================
+def validate_topics():
+    """Validasi topic IDs"""
+    print("\n🔔 TOPIC CONFIGURATION:")
+    print(f"   • ANNOUNCEMENT_TOPIC_ID: {ANNOUNCEMENT_TOPIC_ID} ({TOPIC_NAMES.get(ANNOUNCEMENT_TOPIC_ID, 'Unknown')})")
+    print(f"   • ASSIGNMENT_TOPIC_ID: {ASSIGNMENT_TOPIC_ID} ({TOPIC_NAMES.get(ASSIGNMENT_TOPIC_ID, 'Unknown')})")
+    print(f"   • ATTENDANCE_TOPIC_ID: {ATTENDANCE_TOPIC_ID} ({TOPIC_NAMES.get(ATTENDANCE_TOPIC_ID, 'Unknown')})")
+    
+    # Cek jika masih menggunakan default (1)
+    if ANNOUNCEMENT_TOPIC_ID == 1:
+        print("   ⚠️  ANNOUNCEMENT_TOPIC_ID masih default (1) - pastikan di set ke 3")
+    if ASSIGNMENT_TOPIC_ID == 1:
+        print("   ⚠️  ASSIGNMENT_TOPIC_ID masih default (1) - pastikan di set ke 2")
+    if ATTENDANCE_TOPIC_ID == 1:
+        print("   ⚠️  ATTENDANCE_TOPIC_ID masih default (1) - pastikan di set ke 4")
+
 def validate_config():
     """Validasi konfigurasi yang diperlukan"""
     errors = []
@@ -193,6 +209,8 @@ def validate_config():
     
     if GOOGLE_MEET_LINK == "meet.google.com/your-actual-meet-code":
         warnings.append("GOOGLE_MEET_LINK masih menggunakan nilai default")
+    
+    validate_topics()
     
     # Tampilkan warnings
     if warnings:
