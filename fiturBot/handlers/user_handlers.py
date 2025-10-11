@@ -131,7 +131,7 @@ async def materi2(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "  ➖ Нормально (Normal'na) Biasa saja\n"
         "  🤷 Так ceбe (Tak sebye) = Lumayan / Begitu-begitu saja\n"
         "  ❌ Пло́хо (Plokha) = Buruk\n"
-        "• Pola Kalimat: ... спасибо. A y тебя?` (..., terima kasih. Dan kamu?)\n\n"
+        "• Pola Kalimat: ... спасибо. A y тебя? (..., terima kasih. Dan kamu?)\n\n"
         
         "🔙 Gunakan /materi1 untuk mengulang materi sebelumnya\n"
         "🏠 Gunakan /materi untuk kembali ke menu utama materi"
@@ -418,6 +418,7 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
             parse_mode='Markdown'
 
         )
+
 
 
 
