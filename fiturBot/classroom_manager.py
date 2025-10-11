@@ -47,18 +47,22 @@ class ClassroomManager:
             course_work = self.service.courses().courseWork().list(
                 courseId=CLASSROOM_COURSE_ID
             ).execute()
+            logger.info(f"📋 Found {len(course_work.get('courseWork', []))} assignments")
             
             unsubmitted_students = {}
             
             for work in course_work.get('courseWork', []):
                 work_title = work['title']
                 work_id = work['id']
+
+                logger.info(f"📝 Checking assignment: {work_title}")
                 
                 # Dapatkan submission untuk setiap tugas
                 submissions = self.service.courses().courseWork().studentSubmissions().list(
                     courseId=CLASSROOM_COURSE_ID,
                     courseWorkId=work_id
                 ).execute()
+                logger.info(f"   📊 Found {len(submissions.get('studentSubmissions', []))} submissions")
                 
                 # Cek siswa yang belum submit
                 for submission in submissions.get('studentSubmissions', []):
@@ -66,18 +70,24 @@ class ClassroomManager:
                         student_id = submission['userId']
                         
                         # Dapatkan info siswa
-                        student = self.service.courses().students().get(
+                        try:
+                            student = self.service.courses().students().get(
                             courseId=CLASSROOM_COURSE_ID,
                             userId=student_id
-                        ).execute()
+                            ).execute()
                         
-                        student_name = student['profile']['name']['fullName']
+                            student_name = student['profile']['name']['fullName']
                         
-                        if student_name not in unsubmitted_students:
-                            unsubmitted_students[student_name] = []
+                            if student_name not in unsubmitted_students:
+                                unsubmitted_students[student_name] = []
                         
-                        unsubmitted_students[student_name].append(work_title)
+                            unsubmitted_students[student_name].append(work_title)
+                        
+                        except Exception as e:
+                            logger.error(f"❌ Error getting student info: {e}")
+                            continue
             
+            logger.info(f"🎯 Unsubmitted assignments: {len(unsubmitted_students)} students")
             return unsubmitted_students
             
         except Exception as e:
