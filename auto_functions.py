@@ -4,6 +4,8 @@ from datetime import datetime, timedelta
 from fiturBot.attendance_bot import AttendanceBot
 from fiturBot.handlers.topic_utils import send_to_announcement_topic, send_to_assignment_topic
 from config import GROUP_CHAT_ID, GOOGLE_MEET_LINK
+from config import ANNOUNCEMENT_TOPIC_ID, TOPIC_NAMES, ASSIGNMENT_TOPIC_ID, ATTENDANCE_TOPIC_ID
+
 
 
 logger = logging.getLogger(__name__)
@@ -71,47 +73,15 @@ async def send_classroom_reminder(context: ContextTypes.DEFAULT_TYPE):
             
             message += "📌 **Segera kumpulkan sebelum deadline!**"
 
+        logger.info(f"🔔 Sending class reminder to topic: {ASSIGNMENT_TOPIC_ID} ({TOPIC_NAMES.get(ASSIGNMENT_TOPIC_ID, 'Unknown')})")
+
         # Kirim ke topik TUGAS
         await send_to_assignment_topic(context, message)
-        
         logger.info("✅ Classroom reminder sent successfully")
         
     except Exception as e:
         logger.error(f"Error sending classroom reminder: {e}")
 
-
-async def send_classroom_reminder(context: ContextTypes.DEFAULT_TYPE):
-    """Mengirim reminder untuk tugas yang belum dikumpulkan"""
-    try:
-        bot = AttendanceBot()
-        
-        if bot.classroom_manager is None:
-            logger.warning("Google Classroom tidak tersedia, skip reminder")
-            return
-        
-        unsubmitted_assignments = bot.classroom_manager.get_unsubmitted_assignments()
-        
-        if not unsubmitted_assignments:
-            message = "✅ **SEMUA TUGAS TELAH DIKUMPULKAN!**\n\nSelamat! Semua siswa telah mengumpulkan tugas mereka. 🎉"
-        else:
-            message = "📚 **REMINDER TUGAS GOOGLE CLASSROOM**\n\n"
-            message += "⚠️ **Siswa yang belum mengumpulkan tugas:**\n\n"
-            
-            for student, assignments in unsubmitted_assignments.items():
-                message += f"👤 **{student}**\n"
-                for assignment in assignments:
-                    message += f"   • {assignment}\n"
-                message += "\n"
-            
-            message += "📌 **Segera kumpulkan sebelum deadline!**"
-
-        # Kirim ke topik TUGAS
-        await send_to_assignment_topic(context, message)
-        
-        logger.info("✅ Classroom reminder sent successfully")
-        
-    except Exception as e:
-        logger.error(f"Error sending classroom reminder: {e}")
 
 async def send_class_reminder(context: ContextTypes.DEFAULT_TYPE):
     """Mengirim reminder kelas hari Senin ke topik PENGUMUMAN & INFO"""
@@ -174,9 +144,12 @@ Siap kan buku catatan, semangat belajar, dan pastikan koneksi yang stabil!
 До встречи в классе!
 Have a nice day & спасибо! 🌟"""
         
+        # DEBUG: Log topic yang digunakan
+        logger.info(f"🔔 Sending class reminder to topic: {ANNOUNCEMENT_TOPIC_ID} ({TOPIC_NAMES.get(ANNOUNCEMENT_TOPIC_ID, 'Unknown')})")
+
         # Kirim ke topik PENGUMUMAN & INFO
         await send_to_announcement_topic(context, message)
-        logger.info(f"✅ Class reminder sent to PENGUMUMAN & INFO topic (Hari ini {'Senin' if is_monday else 'bukan Senin'})")
+        logger.info(f"✅ Class reminder sent to PENGUMUMAN & INFO topic (ID: {ANNOUNCEMENT_TOPIC_ID})")
         
     except Exception as e:
         logger.error(f"Error sending class reminder: {e}")
