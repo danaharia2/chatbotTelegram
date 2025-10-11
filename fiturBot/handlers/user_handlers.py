@@ -26,7 +26,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     #Tambahkan perintah admin jika user adalah admin
     if user_id in ADMIN_IDS: 
         message += (
-            "\n👑 **PERINTAH KHUSUS ADMIN:**\n"
+            "\n👑 CaraNTAH KHUSUS ADMIN:\n"
             "/admin_stats - Lihat statistik lengkap\n"
             "/reset_attendance - Reset data kehadiran\n"
             "/force_check - Paksa pengecekan kehadiran\n"
@@ -36,14 +36,14 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "/classroom_reminder - Kirim reminder tugas\n"
             "/class_reminder - Kirim reminder kelas\n"
             "/check_topics - Cek informasi topik grup\n"
-            "\n📝 **Cara Penggunaan Admin:**\n"
+            "\n📝 Cara Penggunaan Admin:\n"
             "• `/reset_attendance confirm` - Reset semua data\n"
             "• `/manual_kick 123456789 Alpha 3x` - Kick murid\n"
             "• Gunakan `/force_check` untuk tes auto-kick\n"
             )
         
         message += (
-            "\n💡 **Tips:**\n"
+            "\n💡 Tips:\n"
         "• Gunakan /register NamaLengkap untuk mendaftar\n"
         "• User ID Anda akan digunakan untuk sistem\n"
         "• Cek /status secara berkala untuk monitoring"
@@ -58,8 +58,8 @@ async def materi(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "📚 **RANGKUMAN MATERI PEMBELAJARAN BAHASA RUSIA**\n\n"
         "Pilih materi yang ingin dipelajari:\n\n"
         "📖 /materi1 - Pengenalan Huruf & Frasa Dasar\n"
-        "🎯 /materi2 - Bunyi Huruf, Penekanan, & Menanyakan Kabar\n"
-        "💡 **Tips Belajar:**\n"
+        "🎯 /materi2 - Bunyi Huruf, Penekanan, & Menanyakan Kabar\n\n"
+        "💡 Tips Belajar:\n"
         "• Pelajari secara bertahap\n"
         "• Praktekkan pengucapan\n"
         "• Gunakan latihan yang tersedia"
@@ -71,27 +71,27 @@ async def materi1(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message = (
         "📖 **MATERI 1: Pengenalan Huruf & Frasa Dasar**\n\n"
         
-        "**1. Aksara Sirilik:**\n"
+        "1. Aksara Sirilik:\n"
         "• Aksara resmi Rusia ada 33 huruf yang terdiri dari: 10 (huruf vokal), 21 (huruf konsonan), dan 2 (tanda bunyi)\n"
         "• Ditemukan oleh Santo Kiril dan Methodius\n\n"
         
-        "**2. Kelompok Huruf:**\n"
-        "• **Huruf Mirip Latin:** Memiliki kemiripan bentuk dan bunyi dengan alfabet Latin\n"
+        "2. Kelompok Huruf:\n"
+        "• Huruf Mirip Latin: Memiliki kemiripan bentuk dan bunyi dengan alfabet Latin\n"
         "  Contoh: A (\"A\"), K (\"K\"), M (\"M\"), O (\"O\"), T (\"T\")\n"
-        "• **Huruf \"Jebakan\":** Terlihat mirip dengan huruf Latin tetapi bunyinya berbeda\n"
+        "• Huruf \"Jebakan\": Terlihat mirip dengan huruf Latin tetapi bunyinya berbeda\n"
         "  Contoh: **H** dibaca \"N\" (Hoc = hidung), **P** dibaca \"R\" (Pыба = ikan), **B** dibaca \"V\" (Bода = air)\n\n"
         
-        "**3. Bunyi Unik:**\n"
-        "• **Ы (bi):** Bunyi \"i\" yang dalam\n"
-        "• **Ш (Sh):** Bunyi \"sh\" seperti \"sy\" dalam \"syarat\"\n"
-        "• **Щ (Sh-ch):** Bunyi \"shch\" yang lembut\n\n"
+        "3. Bunyi Unik:\n"
+        "• Ы (bi): Bunyi \"i\" yang dalam\n"
+        "• Ш (Sh): Bunyi \"sh\" seperti \"sy\" dalam \"syarat\"\n"
+        "• Щ (Sh-ch): Bunyi \"shch\" yang lembut\n\n"
         
-        "**4. Frasa Dasar Perkenalan:**\n"
-        "• **Здравствуйте!** (Zdravstvuyte!) = Halo! (formal)\n"
-        "• **Привет!** (Privet!) = Halo! (informal)\n"
-        "• **Как вас зовут?** (Kak vas zovut?) = Siapa nama Anda?\n"
-        "• **Меня зовут...** (Menya zovut...) = Nama saya...\n"
-        "• **Очень приятно!** (Ochen' priyatno!) = Senang bertemu dengan Anda!\n\n"
+        "4. Frasa Dasar Perkenalan:\n"
+        "• Здравствуйте! (Zdravstvuyte!) = Halo! (formal)\n"
+        "• Привет! (Privyet!) = Halo! (informal)\n"
+        "• Как вас зовут? (Kak vas zovut?) = Siapa nama Anda?\n"
+        "• Меня зовут... (Menya zovut...) = Nama saya...\n"
+        "• Очень приятно! (Ochen' priyatno!) = Senang bertemu dengan Anda!\n\n"
         
         "🔜 Gunakan /materi2 untuk melanjutkan ke materi berikutnya"
     )
@@ -102,36 +102,36 @@ async def materi2(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message = (
         "🎯 **MATERI 2: Bunyi Huruf, Penekanan, & Menanyakan Kabar**\n\n"
         
-        "**1. Huruf dan Bunyi Baru:**\n"
-        "• **Huruf Konsonan:** Б, Д, З, Ж, Л, П\n"
-        "• **Huruf Vokal:** Э, Ы\n"
-        "• **Bunyi Mirip Latin:** Б (B), Д (D), З (Z), П (P), Л (L)\n"
-        "• **Bunyi Khas Rusia:** Ж (Zh) - bunyi \"zh\" seperti \"j\" dalam \"pajak\"\n\n"
+        "1. Huruf dan Bunyi Baru:\n"
+        "• Huruf Konsonan: Б, Д, З, Ж, Л, П\n"
+        "• Huruf Vokal: Э, Ы\n"
+        "• Bunyi Mirip Latin: Б (B), Д (D), З (Z), П (P), Л (L)\n"
+        "• Bunyi Khas Rusia: Ж (Zh) - bunyi \"zh\" seperti \"j\" dalam \"pajak\"\n\n"
         
-        "**2. Aturan Penekanan (Stress):**\n"
+        "2. Aturan Penekanan (Stress):\n"
         "• Hampir setiap kata dalam bahasa Rusia memiliki satu suku kata yang ditekankan\n"
         "• Penekanan hanya berlaku untuk huruf Vokal\n"
         "• Penekanan tidak dapat diprediksi dan harus dihafal\n"
-        "  Contoh: **Мáма** vs **Москвá**\n"
+        "  Contoh: Мáма vs Москвá\n"
         "• Kesalahan penekanan dapat mengubah arti kata\n"
-        "  Contoh: **зáмок** = kastil vs **замóк** = gembok\n\n"
+        "  Contoh: зáмок = kastil vs замóк = gembok\n\n"
         
-        "**3. Reduksi Vokal:**\n"
+        "3. Reduksi Vokal:\n"
         "• Vokal berubah bunyi ketika tidak mendapat penekanan\n"
-        "• **Aturan 1:** Huruf [O] yang tidak mendapatkan penekanan dibaca \"A\"\n"
-        "  Contoh: **Молокó** → dibaca \"malakO\"\n"
-        "• **Aturan 2:** **E** yang tidak mendapatkan penekanan dibaca \"I\"\n"
-        "  Contoh: **Звезда** → dibaca \"zvizdA\"\n\n"
+        "• Aturan 1: Huruf [O] yang tidak mendapatkan penekanan dibaca \"A\"\n"
+        "  Contoh: Молокó → dibaca \"malakO\"\n"
+        "• Aturan 2: E yang tidak mendapatkan penekanan dibaca \"I\"\n"
+        "  Contoh: Звезда → dibaca \"zvizdA\"\n\n"
         
-        "**4. Ekspresi Perasaan & Menanyakan Kabar:**\n"
-        "• **Pertanyaan:** **Как дела?** (Kak dela?) = Apa kabar?\n"
-        "• **Jawaban:**\n"
-        "  ✅ **Очень хорошо** (Ochen' khorosho) = Sangat baik\n"
-        "  👍 **Хорошо** (Khorosho) = Baik\n"
-        "  ➖ **Нормально** (Normal'no) = Biasa saja\n"
-        "  🤷 **Так ceбe** (Tak sebe) = Lumayan / Begitu-begitu saja\n"
-        "  ❌ **Плохо** (Plokho) = Buruk\n"
-        "• **Pola Kalimat:** `..., спасибо. A y тебя?` (..., terima kasih. Dan kamu?)\n\n"
+        "4. Ekspresi Perasaan & Menanyakan Kabar:\n"
+        "• Pertanyaan: Как дела? (Kak dela?) = Apa kabar?\n"
+        "• Jawaban:\n"
+        "  ✅ Очень хорошо (Ochen' kharasho) = Sangat baik\n"
+        "  👍 Хорошо (Kharasho) = Baik\n"
+        "  ➖ Нормально (Normal'na) Biasa saja\n"
+        "  🤷 Так ceбe (Tak sebye) = Lumayan / Begitu-begitu saja\n"
+        "  ❌ Пло́хо (Plokha) = Buruk\n"
+        "• Pola Kalimat: ... спасибо. A y тебя?` (..., terima kasih. Dan kamu?)\n\n"
         
         "🔙 Gunakan /materi1 untuk mengulang materi sebelumnya\n"
         "🏠 Gunakan /materi untuk kembali ke menu utama materi"
@@ -418,6 +418,7 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
             parse_mode='Markdown'
 
         )
+
 
 
 
