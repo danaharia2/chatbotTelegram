@@ -52,14 +52,13 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(message)
 
 async def materi(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handler untuk menu utama materi"""
-    user_id = update.effective_user.id
+    """Handler untuk menu utama materi""
     
     message = (
         "📚 **RANGKUMAN MATERI PEMBELAJARAN BAHASA RUSIA**\n\n"
         "Pilih materi yang ingin dipelajari:\n\n"
-        "📖 `/materi1` - Pengenalan Huruf & Frasa Dasar\n"
-        "🎯 `/materi2` - Bunyi Huruf, Penekanan, & Menanyakan Kabar\n"
+        "📖 /materi1 - Pengenalan Huruf & Frasa Dasar\n"
+        "🎯 /materi2 - Bunyi Huruf, Penekanan, & Menanyakan Kabar\n"
         "💡 **Tips Belajar:**\n"
         "• Pelajari secara bertahap\n"
         "• Praktekkan pengucapan\n"
@@ -419,4 +418,5 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
             parse_mode='Markdown'
 
         )
+
 
