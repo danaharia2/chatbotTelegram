@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from ..attendance_bot import AttendanceBot
 from auto_functions import send_classroom_reminder, send_class_reminder, auto_check_attendance
 from config import ADMIN_IDS, GROUP_CHAT_ID, GOOGLE_MEET_LINK
+from .topic_utils import ANNOUNCEMENT_TOPIC_ID
 
 logger = logging.getLogger(__name__)
 
@@ -256,3 +257,34 @@ async def admin_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     
     await update.message.reply_text(help_message)
+
+@admin_required
+async def test_classroom(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Test koneksi Google Classroom"""
+    try:
+        from fiturBot.attendance_bot import AttendanceBot
+        bot = AttendanceBot()
+        
+        if bot.classroom_manager is None:
+            await update.message.reply_text("❌ Google Classroom tidak tersedia")
+            return
+        
+        await update.message.reply_text("🔍 Checking Google Classroom...")
+        
+        unsubmitted = bot.classroom_manager.get_unsubmitted_assignments()
+        
+        if not unsubmitted:
+            message = "✅ **SEMUA TUGAS SUDAH DIKUMPULKAN!** 🎉"
+        else:
+            message = "📚 **SISWA YANG BELUM KUMPUL TUGAS:**\n\n"
+            for student, assignments in unsubmitted.items():
+                message += f"👤 **{student}**\n"
+                for assignment in assignments:
+                    message += f"   • {assignment}\n"
+                message += "\n"
+            message += f"📊 Total: {len(unsubmitted)} siswa"
+        
+        await update.message.reply_text(message, parse_mode='Markdown')
+        
+    except Exception as e:
+        await update.message.reply_text(f"❌ Error: {str(e)}")
