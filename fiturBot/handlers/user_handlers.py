@@ -133,8 +133,8 @@ async def materi2(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "  ❌ **Плохо** (Plokho) = Buruk\n"
         "• **Pola Kalimat:** `..., спасибо. A y тебя?` (..., terima kasih. Dan kamu?)\n\n"
         
-        "🔙 Gunakan `/materi1` untuk mengulang materi sebelumnya\n"
-        "🏠 Gunakan `/materi` untuk kembali ke menu utama materi"
+        "🔙 Gunakan /materi1 untuk mengulang materi sebelumnya\n"
+        "🏠 Gunakan /materi untuk kembali ke menu utama materi"
     )
     await update.message.reply_text(message, parse_mode='Markdown')
 
@@ -418,6 +418,7 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
             parse_mode='Markdown'
 
         )
+
 
 
 
