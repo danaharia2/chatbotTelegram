@@ -73,7 +73,7 @@ async def send_classroom_reminder(context: ContextTypes.DEFAULT_TYPE):
             
             message += "📌 **Segera kumpulkan sebelum deadline!**"
 
-        logger.info(f"🔔 Sending class reminder to topic: {ASSIGNMENT_TOPIC_ID} ({TOPIC_NAMES.get(ASSIGNMENT_TOPIC_ID, '2')})")
+        logger.info(f"🔔 Sending class reminder to topic: {ASSIGNMENT_TOPIC_ID} ({TOPIC_NAMES.get(ASSIGNMENT_TOPIC_ID, 'Unknown')})")
 
         # Kirim ke topik TUGAS
         await send_to_assignment_topic(context, message)
@@ -145,7 +145,7 @@ Siap kan buku catatan, semangat belajar, dan pastikan koneksi yang stabil!
 Have a nice day & спасибо! 🌟"""
         
         # DEBUG: Log topic yang digunakan
-        logger.info(f"🔔 Sending class reminder to topic: {ANNOUNCEMENT_TOPIC_ID} ({TOPIC_NAMES.get(ANNOUNCEMENT_TOPIC_ID, '3')})")
+        logger.info(f"🔔 Sending class reminder to topic: {ANNOUNCEMENT_TOPIC_ID} ({TOPIC_NAMES.get(ANNOUNCEMENT_TOPIC_ID, 'Unknown')})")
 
         # Kirim ke topik PENGUMUMAN & INFO
         await send_to_announcement_topic(context, message)
@@ -157,4 +157,3 @@ Have a nice day & спасибо! 🌟"""
 async def periodic_check(context: ContextTypes.DEFAULT_TYPE):
     """Pengecekan periodik"""
     await auto_check_attendance(context)
-
