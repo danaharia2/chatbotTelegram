@@ -131,7 +131,7 @@ Have a nice day & спасибо! 🌟"""
 
 🇷🇺✨ Привет, друзья!
 
-Jangan lupa Hari Senin ada Kelas!  🥰
+Jangan lupa Besok ada Kelas!  🥰
 
 📅 Senin, {formatted_date}
 🕖 Pukul 19.00 WIB (zona waktu lain menyesuaikan)
@@ -157,3 +157,4 @@ Have a nice day & спасибо! 🌟"""
 async def periodic_check(context: ContextTypes.DEFAULT_TYPE):
     """Pengecekan periodik"""
     await auto_check_attendance(context)
+
