@@ -1,7 +1,14 @@
-# main.py
 import logging
+import asyncio
+import signal
+import sys
 from telegram.ext import Application, CommandHandler
 from datetime import time
+from fiturBot.attendance_bot import AttendanceBot
+from fiturBot.handlers import (
+    start, status, test_connection, get_my_info, register, absen, admin_stats, reset_attendance, force_attendance_check, export_data,
+    manual_kick, list_warnings, classroom_reminder_now, class_reminder_now, check_topics, admin_help, test_classroom
+)
 
 # Setup logging
 logging.basicConfig(
@@ -10,75 +17,127 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-def main():
-    """Main function - synchronous version"""
+class BotManager:
+    def __init__(self):
+        self.application = None
+        self.is_running = False
+
+    async def error_handler(self, update: object, context):
+        """Handle errors dalam bot"""
+        logger.error(f"Exception while handling an update: {context.error}", exc_info=context.error)
+
+    async def setup_bot(self):
+        """Setup bot application"""
+        try:
+            # Test koneksi terlebih dahulu
+            logger.info("Testing koneksi Google Sheets...")
+            bot = AttendanceBot()
+            bot.get_student_data()
+            
+            # Buat application Telegram
+            self.application = Application.builder().token(BOT_TOKEN).build()
+            
+            # Add error handler
+            self.application.add_error_handler(self.error_handler)
+            
+            # ==================== 🎯 COMMAND UNTUK SEMUA USER ====================
+            self.application.add_handler(CommandHandler("start", start))
+            self.application.add_handler(CommandHandler("absen", absen))
+            self.application.add_handler(CommandHandler("status", status))
+            self.application.add_handler(CommandHandler("test", test_connection))
+            self.application.add_handler(CommandHandler("myinfo", get_my_info))
+            self.application.add_handler(CommandHandler("register", register))
+            
+            # ==================== 👑 COMMAND UNTUK ADMIN ONLY ====================
+            self.application.add_handler(CommandHandler("admin_stats", admin_stats))
+            self.application.add_handler(CommandHandler("reset_attendance", reset_attendance))
+            self.application.add_handler(CommandHandler("force_check", force_attendance_check))
+            self.application.add_handler(CommandHandler("export_data", export_data))
+            self.application.add_handler(CommandHandler("manual_kick", manual_kick))
+            self.application.add_handler(CommandHandler("list_warnings", list_warnings))
+            self.application.add_handler(CommandHandler("classroom_reminder", classroom_reminder_now))
+            self.application.add_handler(CommandHandler("test_classroom", test_classroom))
+            self.application.add_handler(CommandHandler("class_reminder", class_reminder_now))
+            self.application.add_handler(CommandHandler("check_topics", check_topics))
+            self.application.add_handler(CommandHandler("admin_help", admin_help))
+            
+            # ==================== ⏰ JOB QUEUE UNTUK OTOMATISASI ====================
+            job_queue = self.application.job_queue
+            
+            if job_queue is None:
+                logger.warning("⚠️ JobQueue tidak tersedia. Fitur pengecekan otomatis akan dinonaktifkan.")
+            else:
+                # Import fungsi otomatisasi
+                from auto_functions import periodic_check, send_classroom_reminder, send_class_reminder
+                
+                # ✅ Schedule untuk pengecekan kehadiran
+                job_queue.run_daily(periodic_check, time=time(hour=8, minute=0))   # Jam 08:00
+                job_queue.run_daily(periodic_check, time=time(hour=18, minute=0))  # Jam 18:00
+                
+                # ✅ Schedule untuk reminder classroom (setiap hari jam 10:00)
+                job_queue.run_daily(send_classroom_reminder, time=time(hour=10, minute=0))
+                
+                # ✅ Schedule untuk reminder kelas (Minggu jam 18:00 dan Senin jam 10:00)
+                job_queue.run_daily(send_class_reminder, time=time(hour=18, minute=0), days=(6,))  # Minggu
+                job_queue.run_daily(send_class_reminder, time=time(hour=10, minute=0), days=(0,))  # Senin
+                
+                logger.info("✅ JobQueue berhasil di-setup untuk pengecekan otomatis dan reminder")
+            
+            self.is_running = True
+            logger.info("🤖 Bot setup completed successfully!")
+            
+        except Exception as e:
+            logger.error(f"❌ Failed to setup bot: {e}")
+            self.is_running = False
+            raise
+
+    async def start_bot(self):
+        """Start bot polling"""
+        if not self.application:
+            await self.setup_bot()
+        
+        logger.info("🚀 Starting bot polling...")
+        await self.application.run_polling()
+
+    async def stop_bot(self):
+        """Stop bot gracefully"""
+        if self.application and self.is_running:
+            logger.info("🛑 Stopping bot gracefully...")
+            await self.application.stop()
+            await self.application.shutdown()
+            self.is_running = False
+            logger.info("✅ Bot stopped successfully")
+
+# Global instance
+bot_manager = BotManager()
+
+async def main():
+    """Main function"""
     try:
-        # Import config
-        from config import validate_config, BOT_TOKEN
-        if not validate_config():
-            logger.error("Config validation failed")
-            return
-        
-        # Test connections
-        logger.info("Testing connections...")
-        from fiturBot.attendance_bot import AttendanceBot
-        bot = AttendanceBot()
-        df = bot.get_student_data()
-        logger.info(f"✅ Connected to Google Sheets - {len(df)} records")
-        
-        # Create application
-        application = Application.builder().token(BOT_TOKEN).build()
-        
-        # Import handlers
-        from fiturBot.handlers import (
-            start, status, test_connection, get_my_info, register, absen,
-            admin_help, admin_stats, reset_attendance, force_attendance_check, export_data,
-            manual_kick, list_warnings, classroom_reminder_now, class_reminder_now, check_topics
-        )
-        
-        # Add command handlers
-        commands = [
-            ("start", start),
-            ("absen", absen),
-            ("status", status),
-            ("test", test_connection),
-            ("myinfo", get_my_info),
-            ("register", register),
-            ("admin_help", admin_help),
-            ("admin_stats", admin_stats),
-            ("reset_attendance", reset_attendance),
-            ("force_check", force_attendance_check),
-            ("export_data", export_data),
-            ("manual_kick", manual_kick),
-            ("list_warnings", list_warnings),
-            ("classroom_reminder", classroom_reminder_now),
-            ("class_reminder", class_reminder_now),
-            ("check_topics", check_topics)
-        ]
-        
-        for command, handler in commands:
-            application.add_handler(CommandHandler(command, handler))
-        
-        # Setup job queue for scheduled tasks
-        if application.job_queue:
-            from auto_functions import periodic_check, send_classroom_reminder, send_class_reminder
-            
-            # Schedule tasks
-            application.job_queue.run_daily(periodic_check, time=time(hour=8, minute=0))
-            application.job_queue.run_daily(periodic_check, time=time(hour=18, minute=0))
-            application.job_queue.run_daily(send_classroom_reminder, time=time(hour=10, minute=0))
-            application.job_queue.run_daily(send_class_reminder, time=time(hour=18, minute=0), days=(6,))
-            application.job_queue.run_daily(send_class_reminder, time=time(hour=10, minute=0), days=(0,))
-            
-            logger.info("✅ Scheduled tasks configured")
-        
-        logger.info("🤖 Bot is starting polling...")
-        
-        # Start polling - this will run forever
-        application.run_polling()
-        
+        await bot_manager.start_bot()
+    except KeyboardInterrupt:
+        logger.info("Received KeyboardInterrupt, shutting down...")
     except Exception as e:
-        logger.error(f"❌ Bot failed: {e}")
+        logger.error(f"Bot crashed: {e}")
+    finally:
+        await bot_manager.stop_bot()
+
+def signal_handler(signum, frame):
+    """Handle shutdown signals"""
+    logger.info(f"Received signal {signum}, shutting down...")
+    asyncio.create_task(bot_manager.stop_bot())
 
 if __name__ == '__main__':
-    main()
+    # Setup signal handlers
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+    
+    # Import config
+    try:
+        from config import BOT_TOKEN
+    except ImportError:
+        logger.error("❌ config.py not found! Please create config.py with BOT_TOKEN")
+        sys.exit(1)
+    
+    # Run bot
+    asyncio.run(main())
