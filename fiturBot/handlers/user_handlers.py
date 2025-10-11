@@ -93,7 +93,7 @@ async def materi1(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "• **Меня зовут...** (Menya zovut...) = Nama saya...\n"
         "• **Очень приятно!** (Ochen' priyatno!) = Senang bertemu dengan Anda!\n\n"
         
-        "🔜 Gunakan `/materi2` untuk melanjutkan ke materi berikutnya"
+        "🔜 Gunakan /materi2 untuk melanjutkan ke materi berikutnya"
     )
     await update.message.reply_text(message, parse_mode='Markdown')
 
@@ -418,6 +418,7 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
             parse_mode='Markdown'
 
         )
+
 
 
 
