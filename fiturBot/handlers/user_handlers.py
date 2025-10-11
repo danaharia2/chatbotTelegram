@@ -53,6 +53,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def materi(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handler untuk menu utama materi"""
+    user_id = update.effective_user.id
+    
     message = (
         "📚 **RANGKUMAN MATERI PEMBELAJARAN BAHASA RUSIA**\n\n"
         "Pilih materi yang ingin dipelajari:\n\n"
@@ -417,3 +419,4 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
             parse_mode='Markdown'
 
         )
+
