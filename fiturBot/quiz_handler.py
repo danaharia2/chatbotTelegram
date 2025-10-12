@@ -541,4 +541,17 @@ async def handle_quiz_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         correct_answer = int(data.split("_")[2]) - 1
         
         if 'quiz_creation' in context.user_data:
-            creation_data = context.user_data['quiz_creat
+            creation_data = context.user_data['quiz_creation']
+            creation_data['current_question']['correct_answer'] = correct_answer
+            creation_data['questions'].append(creation_data['current_question'])
+            creation_data['step'] = 'add_more'
+            
+            await query.edit_message_text(
+                text=query.message.text + f"\n\n✅ Jawaban benar disimpan: Opsi {correct_answer + 1}",
+                parse_mode='Markdown'
+            )
+            
+            await context.bot.send_message(
+                chat_id=query.message.chat_id,
+                text="✅ Pertanyaan berhasil disimpan!\n\nTambah pertanyaan lagi? (ya/tidak)"
+            )
