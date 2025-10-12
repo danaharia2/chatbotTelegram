@@ -21,12 +21,15 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/test - Test koneksi Google Sheets\n"
         "/myinfo - Lihat info Anda\n"
         "/register - Buat pendaftaran ke sistem\n"
+        "/join_quiz - Bergabung dengan quiz aktif\n"
+        "/quiz_leaderboard - Lihat peringkat global\n"
+        "/my_quiz_stats - Statistik quiz pribadi\n"
     )
 
     #Tambahkan perintah admin jika user adalah admin
     if user_id in ADMIN_IDS: 
         message += (
-            "\n👑 CaraNTAH KHUSUS ADMIN:\n"
+            "\n👑 PERINTAH KHUSUS ADMIN:\n"
             "/admin_stats - Lihat statistik lengkap\n"
             "/reset_attendance - Reset data kehadiran\n"
             "/force_check - Paksa pengecekan kehadiran\n"
@@ -38,7 +41,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "/start_reminder `NzgxOTM4ODI5NTEz -1002408972369` - Mengetes reminder classroom otomatis\n"
             "/classroom_reminder - Kirim reminder tugas\n"
             "/class_reminder - Kirim reminder kelas\n"
-            "/check_topics - Cek informasi topik grup\n"
+            "/check_topics - Cek informasi topik grup\n\n"
             "\n📝 Cara Penggunaan Admin:\n"
             "• `/reset_attendance confirm` - Reset semua data\n"
             "• `/manual_kick 123456789 Alpha 3x` - Kick murid\n"
@@ -434,6 +437,7 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Contoh: `/register Andi Wijaya andi@gmail.com`",
             parse_mode='Markdown'
         )
+
 
 
 
