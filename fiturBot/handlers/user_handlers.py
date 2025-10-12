@@ -316,11 +316,11 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     
     # Tambahkan peringatan jika memenuhi kriteria (dengan tipe data intenger)
-    if total_alpha >= 1:
+    if total_alpha >= 2:
         message += f"\n\n🚨 **PERINGATAN:** Anda memiliki {total_alpha}x alpha!"
     if total_izin >= 2:
         message += f"\n\n⚠️ **PERINGATAN:** Total izin Anda {total_izin}x!"
-    if student['Total Izin'] >= 2 or student['Total Alpha'] >= 1:
+    if student['Total Izin'] >= 2 or student['Total Alpha'] >= 2:
         message += "\n\n⚠️ **STATUS PERINGATAN:** Anda terancam akan dikeluarkan jika tidak hadir pada pertemuan selanjutnya!"
     
     await update.message.reply_text(message)
@@ -434,6 +434,7 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Contoh: `/register Andi Wijaya andi@gmail.com`",
             parse_mode='Markdown'
         )
+
 
 
 
