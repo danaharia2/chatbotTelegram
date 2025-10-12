@@ -96,7 +96,7 @@ async def materi1(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "• <b>Меня зовут...</b> (Menya zovut...) = Nama saya...\n"
         "• <b>Очень приятно!</b> (Ochen' priyatno!) = Senang bertemu dengan Anda!\n\n"
         
-        "🔜 Gunakan <code>/materi2</code> untuk melanjutkan ke materi berikutnya"
+        "🔜 Gunakan /materi2 untuk melanjutkan ke materi berikutnya"
     )
     await update.message.reply_text(message, parse_mode='HTML')
     
@@ -136,8 +136,8 @@ async def materi2(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "  ❌ <b>Плохо</b> (Plokho) = Buruk\n"
         "• <b>Pola Kalimat:</b> <code>..., спасибо. А у тебя?</code> (..., terima kasih. Dan kamu?)\n\n"
         
-        "🔙 Gunakan <code>/materi1</code> untuk mengulang materi sebelumnya\n"
-        "🏠 Gunakan <code>/materi</code> untuk kembali ke menu utama materi"
+        "🔙 Gunakan /materi1 untuk mengulang materi sebelumnya\n"
+        "🏠 Gunakan /materi untuk kembali ke menu utama materi"
     )
     await update.message.reply_text(message, parse_mode='HTML')
 
@@ -434,6 +434,7 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Contoh: `/register Andi Wijaya andi@gmail.com`",
             parse_mode='Markdown'
         )
+
 
 
 
