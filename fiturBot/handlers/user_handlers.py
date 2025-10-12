@@ -1,4 +1,4 @@
-from telegram import Update
+kharashochen'chen'rom telegram import Update
 from telegram.ext import ContextTypes
 import logging
 from ..attendance_bot import AttendanceBot
@@ -129,7 +129,7 @@ async def materi2(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "4. Ekspresi Perasaan & Menanyakan Kabar:\n"
         "• Pertanyaan: Как дела? (Kak dela?) = Apa kabar?\n"
         "• Jawaban:\n"
-        "  ✅ Очень хорошо (Ochen' kharasho) = Sangat baik\n"
+        "  ✅ Очень хорошо (Ochin' Kharasho) = Sangat baik\n"
         "  👍 Хорошо (Kharasho) = Baik\n"
         "  ➖ Нормально (Normal'na) Biasa saja\n"
         "  🤷 Так ceбe (Tak sebye) = Lumayan / Begitu-begitu saja\n"
@@ -154,8 +154,8 @@ async def absen(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(
             "❌ **Anda belum terdaftar dalam sistem!**\n\n"
             "Silakan daftar terlebih dahulu dengan:\n"
-            "`/register NamaLengkap`\n\n"
-            "Contoh: `/register Andi Wijaya`\n"
+            "`/register NamaLengkap EmailAnda` \n\n"
+            "Contoh `/register Andi Wijaya andi@gmail.com`\n"
             "Gunakan huruf kapital disetiap kata sesuai pada contoh",
             parse_mode='Markdown'
         )
@@ -434,6 +434,7 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Contoh: `/register Andi Wijaya andi@gmail.com`",
             parse_mode='Markdown'
         )
+
 
 
 
