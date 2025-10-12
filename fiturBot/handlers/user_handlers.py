@@ -70,76 +70,77 @@ async def materi(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(message, parse_mode='Markdown')
 
 async def materi1(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def materi1(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handler untuk materi 1: Pengenalan Huruf & Frasa Dasar"""
     message = (
-        "📖 **MATERI 1: Pengenalan Huruf & Frasa Dasar**\n\n"
+        "📖 <b>MATERI 1: Pengenalan Huruf & Frasa Dasar</b>\n\n"
         
-        "1. Aksara Sirilik:\n"
-        "• Aksara resmi Rusia ada 33 huruf yang terdiri dari: 10 (huruf vokal), 21 (huruf konsonan), dan 2 (tanda bunyi)\n"
+        "<b>1. Aksara Sirilik:</b>\n"
+        "• Aksara resmi Rusia yang terdiri dari 33 huruf\n"
         "• Ditemukan oleh Santo Kiril dan Methodius\n\n"
         
-        "2. Kelompok Huruf:\n"
-        "• Huruf Mirip Latin: Memiliki kemiripan bentuk dan bunyi dengan alfabet Latin\n"
+        "<b>2. Kelompok Huruf:</b>\n"
+        "• <b>Huruf Mirip Latin:</b> Memiliki kemiripan bentuk dan bunyi dengan alfabet Latin\n"
         "  Contoh: A (\"A\"), K (\"K\"), M (\"M\"), O (\"O\"), T (\"T\")\n"
-        "• Huruf \"Jebakan\": Terlihat mirip dengan huruf Latin tetapi bunyinya berbeda\n"
-        "  Contoh: **H** dibaca \"N\" (Hoc = hidung), **P** dibaca \"R\" (Pыба = ikan), **B** dibaca \"V\" (Bода = air)\n\n"
+        "• <b>Huruf \"Jebakan\":</b> Terlihat mirip dengan huruf Latin tetapi bunyinya berbeda\n"
+        "  Contoh: <b>H</b> dibaca \"N\" (Hoc = hidung), <b>P</b> dibaca \"R\" (Pыба = ikan), <b>B</b> dibaca \"V\" (Bода = air)\n\n"
         
-        "3. Bunyi Unik:\n"
-        "• Ы (bi): Bunyi \"i\" yang dalam\n"
-        "• Ш (Sh): Bunyi \"sh\" seperti \"sy\" dalam \"syarat\"\n"
-        "• Щ (Sh-ch): Bunyi \"shch\" yang lembut\n\n"
+        "<b>3. Bunyi Unik:</b>\n"
+        "• <b>Ы (bi):</b> Bunyi \"i\" yang dalam\n"
+        "• <b>Ш (Sh):</b> Bunyi \"sh\" seperti \"sy\" dalam \"syarat\"\n"
+        "• <b>Щ (Sh-ch):</b> Bunyi \"shch\" yang lembut\n\n"
         
-        "4. Frasa Dasar Perkenalan:\n"
-        "• Здравствуйте! (Zdravstvuyte!) = Halo! (formal)\n"
-        "• Привет! (Privyet!) = Halo! (informal)\n"
-        "• Как вас зовут? (Kak vas zovut?) = Siapa nama Anda?\n"
-        "• Меня зовут... (Menya zovut...) = Nama saya...\n"
-        "• Очень приятно! (Ochen' priyatno!) = Senang bertemu dengan Anda!\n\n"
+        "<b>4. Frasa Dasar Perkenalan:</b>\n"
+        "• <b>Здравствуйте!</b> (Zdravstvuyte!) = Halo! (formal)\n"
+        "• <b>Привет!</b> (Privet!) = Halo! (informal)\n"
+        "• <b>Как вас зовут?</b> (Kak vas zovut?) = Siapa nama Anda?\n"
+        "• <b>Меня зовут...</b> (Menya zovut...) = Nama saya...\n"
+        "• <b>Очень приятно!</b> (Ochen' priyatno!) = Senang bertemu dengan Anda!\n\n"
         
-        "🔜 Gunakan /materi2 untuk melanjutkan ke materi berikutnya"
+        "🔜 Gunakan <code>/materi2</code> untuk melanjutkan ke materi berikutnya"
     )
-    await update.message.reply_text(message, parse_mode='Markdown')
-
+    await update.message.reply_text(message, parse_mode='HTML')
+    
 async def materi2(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handler untuk materi 2: Bunyi Huruf, Penekanan, & Menanyakan Kabar"""
     message = (
-        "🎯 **MATERI 2: Bunyi Huruf, Penekanan, & Menanyakan Kabar**\n\n"
+        "🎯 <b>MATERI 2: Bunyi Huruf, Penekanan, & Menanyakan Kabar</b>\n\n"
         
-        "1. Huruf dan Bunyi Baru:\n"
-        "• Huruf Konsonan: Б, Д, З, Ж, Л, П\n"
-        "• Huruf Vokal: Э, Ы\n"
-        "• Bunyi Mirip Latin: Б (B), Д (D), З (Z), П (P), Л (L)\n"
-        "• Bunyi Khas Rusia: Ж (Zh) - bunyi \"zh\" seperti \"j\" dalam \"pajak\"\n\n"
+        "<b>1. Huruf dan Bunyi Baru:</b>\n"
+        "• <b>Huruf Konsonan:</b> Б, Д, З, Ж, Л, П\n"
+        "• <b>Huruf Vokal:</b> Э, Ы\n"
+        "• <b>Bunyi Mirip Latin:</b> Б (B), Д (D), З (Z), П (P), Л (L)\n"
+        "• <b>Bunyi Khas Rusia:</b> Ж (Zh) - bunyi \"zh\" seperti \"j\" dalam \"pajak\"\n\n"
         
-        "2. Aturan Penekanan (Stress):\n"
+        "<b>2. Aturan Penekanan (Stress):</b>\n"
         "• Hampir setiap kata dalam bahasa Rusia memiliki satu suku kata yang ditekankan\n"
         "• Penekanan hanya berlaku untuk huruf Vokal\n"
-        "• Penekanan tidak dapat diprediksi dan harus dihafal\n"
-        "  Contoh: Мáма vs Москвá\n"
+        "• Penekanan <b>tidak dapat diprediksi</b> dan harus dihafal\n"
+        "  Contoh: <b>Мáма</b> vs <b>Москвá</b>\n"
         "• Kesalahan penekanan dapat mengubah arti kata\n"
-        "  Contoh: зáмок = kastil vs замóк = gembok\n\n"
+        "  Contoh: <b>зáмок</b> = kastil vs <b>замóк</b> = gembok\n\n"
         
-        "3. Reduksi Vokal:\n"
+        "<b>3. Reduksi Vokal:</b>\n"
         "• Vokal berubah bunyi ketika tidak mendapat penekanan\n"
-        "• Aturan 1: Huruf [O] yang tidak mendapatkan penekanan dibaca \"A\"\n"
-        "  Contoh: Молокó → dibaca \"malakO\"\n"
-        "• Aturan 2: E yang tidak mendapatkan penekanan dibaca \"I\"\n"
-        "  Contoh: Звезда → dibaca \"zvizdA\"\n\n"
+        "• <b>Aturan 1:</b> Huruf [O] yang tidak mendapatkan penekanan dibaca \"A\"\n"
+        "  Contoh: <b>Молокó</b> → dibaca \"malakO\"\n"
+        "• <b>Aturan 2:</b> E yang tidak mendapatkan penekanan dibaca \"I\"\n"
+        "  Contoh: <b>Звезда</b> → dibaca \"zvizdA\"\n\n"
         
-        "4. Ekspresi Perasaan & Menanyakan Kabar:\n"
-        "• Pertanyaan: Как дела? (Kak dela?) = Apa kabar?\n"
-        "• Jawaban:\n"
-        "  ✅ Очень хорошо (Ochin' Kharasho) = Sangat baik\n"
-        "  👍 Хорошо (Kharasho) = Baik\n"
-        "  ➖ Нормально (Normal'na) Biasa saja\n"
-        "  🤷 Так ceбe (Tak sebye) = Lumayan / Begitu-begitu saja\n"
-        "  ❌ Пло́хо (Plokha) = Buruk\n"
-        "• Pola Kalimat: ... спасибо. A y тебя? (..., terima kasih. Dan kamu?)\n\n"
+        "<b>4. Ekspresi Perasaan & Menanyakan Kabar:</b>\n"
+        "• <b>Pertanyaan:</b> <b>Как дела?</b> (Kak dela?) = Apa kabar?\n"
+        "• <b>Jawaban:</b>\n"
+        "  ✅ <b>Очень хорошо</b> (Ochen' khorosho) = Sangat baik\n"
+        "  👍 <b>Хорошо</b> (Khorosho) = Baik\n"
+        "  ➖ <b>Нормально</b> (Normal'no) = Biasa saja\n"
+        "  🤷 <b>Так себе</b> (Tak sebe) = Lumayan / Begitu-begitu saja\n"
+        "  ❌ <b>Плохо</b> (Plokho) = Buruk\n"
+        "• <b>Pola Kalimat:</b> <code>..., спасибо. А у тебя?</code> (..., terima kasih. Dan kamu?)\n\n"
         
-        "🔙 Gunakan /materi1 untuk mengulang materi sebelumnya\n"
-        "🏠 Gunakan /materi untuk kembali ke menu utama materi"
+        "🔙 Gunakan <code>/materi1</code> untuk mengulang materi sebelumnya\n"
+        "🏠 Gunakan <code>/materi</code> untuk kembali ke menu utama materi"
     )
-    await update.message.reply_text(message, parse_mode='Markdown')
+    await update.message.reply_text(message, parse_mode='HTML')
 
 async def absen(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handler untuk absen dengan pilihan status"""
@@ -434,6 +435,7 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Contoh: `/register Andi Wijaya andi@gmail.com`",
             parse_mode='Markdown'
         )
+
 
 
 
