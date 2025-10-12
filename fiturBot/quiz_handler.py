@@ -70,7 +70,7 @@ class QuizManager:
         return self.quizzes.get(quiz_id)
     
     def start_quiz(self, quiz_id, chat_id):
-        """Start a quiz in a chat dengan timer otomatis"""
+        """Start a quiz in a chat"""
         if quiz_id not in self.quizzes:
             return False
         
@@ -107,7 +107,7 @@ class QuizManager:
                 # Kirim notifikasi waktu habis
                 await context.bot.send_message(
                     chat_id=chat_id,
-                    text=f"⏰ **Waktu habis!** Melanjutkan ke soal berikutnya..."
+                    text="⏰ **Waktu habis!** Melanjutkan ke soal berikutnya..."
                 )
                 
                 # Pindah ke soal berikutnya
@@ -264,6 +264,268 @@ class QuizManager:
             )])
         
         reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        # Tambah info timer
+        timer_info = "\n\n⏰ **Timer:** 60 detik (otomatis lanjut)"
+        
+        message = await context.bot.send_message(
+            chat_id=chat_id,
+            text=f"❓ **PERTANYAAN {current_q}/{total_q}**\n\n{question['question']}{timer_info}",
+            reply_markup=reply_markup,
+            parse_mode='Markdown'
+        )
+        
+        # Store message ID
+        if chat_id in self.active_quizzes:
+            self.active_quizzes[chat_id]['message_id'] = message.message_id
+
+    async def show_quiz_results(self, context, chat_id, results):
+        """Show quiz results"""
+        results_text = f"🏆 **QUIZ SELESAI: {results['quiz_title']}** 🏆\n\n"
+        results_text += f"📊 **Total Pertanyaan:** {results['total_questions']}\n"
+        results_text += f"👥 **Total Peserta:** {len(results['participants'])}\n\n"
+        
+        if not results['participants']:
+            results_text += "❌ Tidak ada peserta yang mengikuti quiz."
+        else:
+            results_text += "**🏅 PERINGKAT:**\n\n"
+            for i, (user_id, data) in enumerate(results['participants'][:10], 1):
+                medal = "🥇" if i == 1 else "🥈" if i == 2 else "🥉" if i == 3 else f"{i}."
+                results_text += f"{medal} **{data['username']}** - {data['score']}/{results['total_questions']}\n"
+        
+        # Tambah info statistik
+        if results['participants']:
+            total_score = sum(data['score'] for _, data in results['participants'])
+            avg_score = total_score / len(results['participants'])
+            results_text += f"\n📈 **Rata-rata Score:** {avg_score:.1f}"
+        
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text=results_text,
+            parse_mode='Markdown'
+        )
+
+# Global quiz manager instance
+quiz_manager = QuizManager()
+
+# Command handlers
+async def quiz_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Show quiz help"""
+    help_text = """
+🎯 **FITUR QUIZ BOT** 🎯
+
+**Untuk Semua Peserta:**
+• `/quiz_help` - Bantuan fitur quiz
+• `/quiz_leaderboard` - Lihat peringkat global
+• `/my_quiz_stats` - Statistik quiz pribadi
+
+**Untuk Admin:**
+• `/create_quiz` - Buat quiz baru (interaktif)
+• `/list_quizzes` - Daftar semua quiz
+• `/start_quiz <quiz_id>` - Mulai quiz dengan timer otomatis
+• `/next_question` - Paksa lanjut ke soal berikutnya
+• `/finish_quiz` - Akhiri quiz manual
+
+**⏰ FITUR TIMER OTOMATIS:**
+• Setiap soal punya timer 60 detik
+• Otomatis lanjut ke soal berikutnya
+• Otomatis berakhir ketika soal habis
+• Bisa dijalankan dari private chat atau grup
+
+**📝 Cara Pakai:**
+1. Buat quiz: `/create_quiz`
+2. Mulai quiz: `/start_quiz ID_QUIZ`
+3. Bot otomatis kirim soal ke grup
+4. Setiap soal: 60 detik → auto next
+5. Quiz berakhir otomatis
+"""
+    await update.message.reply_text(help_text, parse_mode='Markdown')
+
+async def create_quiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Start quiz creation process"""
+    user_id = update.effective_user.id
+    
+    if user_id not in ADMIN_IDS:
+        await update.message.reply_text("❌ Hanya admin yang bisa membuat quiz.")
+        return
+    
+    # Initialize quiz creation process
+    context.user_data['quiz_creation'] = {
+        'step': 'title',
+        'questions': [],
+        'title': None
+    }
+    
+    await update.message.reply_text(
+        "🎯 **Membuat Quiz Baru**\n\n"
+        "Silakan kirim judul untuk quiz ini:"
+    )
+
+async def handle_quiz_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle quiz creation messages"""
+    user_id = update.effective_user.id
+    
+    # Check if user is in quiz creation mode
+    if 'quiz_creation' not in context.user_data:
+        return
+    
+    creation_data = context.user_data['quiz_creation']
+    step = creation_data['step']
+    text = update.message.text
+    
+    logger.info(f"Quiz creation - Step: {step}, User: {user_id}")
+    
+    try:
+        if step == 'title':
+            creation_data['title'] = text
+            creation_data['step'] = 'question'
+            await update.message.reply_text(
+                "✅ **Judul disimpan!**\n\n"
+                "Silakan kirim pertanyaan pertama:"
+            )
+        
+        elif step == 'question':
+            creation_data['current_question'] = {
+                'question': text,
+                'options': [],
+                'correct_answer': None
+            }
+            creation_data['step'] = 'option_1'
+            await update.message.reply_text(
+                "✅ **Pertanyaan disimpan!**\n\n"
+                "Silakan kirim opsi jawaban **pertama**:"
+            )
+        
+        elif step.startswith('option_'):
+            option_num = int(step.split('_')[1])
+            creation_data['current_question']['options'].append(text)
+            
+            if option_num < 4:
+                creation_data['step'] = f'option_{option_num + 1}'
+                await update.message.reply_text(
+                    f"✅ Opsi {option_num} disimpan!\n\n"
+                    f"Silakan kirim opsi jawaban **{option_num + 1}**:"
+                )
+            else:
+                creation_data['step'] = 'correct_answer'
+                
+                # Create inline keyboard for correct answer selection
+                keyboard = []
+                for i, option in enumerate(creation_data['current_question']['options']):
+                    keyboard.append([InlineKeyboardButton(
+                        f"Opsi {i+1}: {option}", 
+                        callback_data=f"quiz_correct_{i}"
+                    )])
+                
+                reply_markup = InlineKeyboardMarkup(keyboard)
+                
+                question_text = creation_data['current_question']['question']
+                options_text = "\n".join([f"{i+1}. {opt}" for i, opt in enumerate(creation_data['current_question']['options'])])
+                
+                await update.message.reply_text(
+                    f"📝 **Pertanyaan:** {question_text}\n\n"
+                    f"📋 **Opsi Jawaban:**\n{options_text}\n\n"
+                    "**Pilih jawaban yang benar:**",
+                    reply_markup=reply_markup
+                )
+        
+        elif step == 'add_more':
+            if text.lower() in ['ya', 'yes', 'y', 'iya', 'yup']:
+                creation_data['step'] = 'question'
+                await update.message.reply_text(
+                    "✅ **Mari tambah pertanyaan lagi!**\n\n"
+                    "Silakan kirim pertanyaan berikutnya:"
+                )
+            else:
+                # Finish quiz creation
+                quiz_id = f"quiz_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                quiz_title = creation_data['title']
+                questions = creation_data['questions']
+                
+                quiz_manager.create_quiz(
+                    quiz_id,
+                    quiz_title,
+                    questions,
+                    user_id
+                )
+                
+                # Clear creation data
+                del context.user_data['quiz_creation']
+                
+                await update.message.reply_text(
+                    f"🎉 **QUIZ BERHASIL DIBUAT!** 🎉\n\n"
+                    f"📖 **Judul:** {quiz_title}\n"
+                    f"❓ **Jumlah Pertanyaan:** {len(questions)}\n"
+                    f"🆔 **ID Quiz:** `{quiz_id}`\n\n"
+                    f"**Untuk memulai quiz, gunakan:**\n"
+                    f"`/start_quiz {quiz_id}`\n\n"
+                    f"**Atau lihat daftar quiz:** `/list_quizzes`",
+                    parse_mode='Markdown'
+                )
+                
+    except Exception as e:
+        logger.error(f"Error in quiz creation: {e}")
+        await update.message.reply_text(
+            "❌ Terjadi error saat membuat quiz. Silakan mulai ulang dengan `/create_quiz`"
+        )
+        # Clear faulty creation data
+        if 'quiz_creation' in context.user_data:
+            del context.user_data['quiz_creation']
+
+async def list_quizzes(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """List all available quizzes"""
+    if not quiz_manager.quizzes:
+        await update.message.reply_text("❌ Belum ada quiz yang dibuat.")
+        return
+    
+    quizzes_text = "📚 **DAFTAR QUIZ YANG TERSEDIA**\n\n"
+    
+    for i, (quiz_id, quiz_data) in enumerate(quiz_manager.quizzes.items(), 1):
+        quizzes_text += f"**{i}. {quiz_data['title']}**\n"
+        quizzes_text += f"   🆔 `{quiz_id}`\n"
+        quizzes_text += f"   ❓ {quiz_data['total_questions']} pertanyaan\n"
+        quizzes_text += f"   👤 Dibuat oleh: {quiz_data['created_by']}\n"
+        quizzes_text += f"   📅 {quiz_data['created_at'][:10]}\n\n"
+    
+    quizzes_text += "\n**Cara memulai:** `/start_quiz ID_QUIZ`"
+    
+    await update.message.reply_text(quizzes_text, parse_mode='Markdown')
+
+async def start_quiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Start a quiz dengan timer otomatis"""
+    user_id = update.effective_user.id
+    
+    if user_id not in ADMIN_IDS:
+        await update.message.reply_text("❌ Hanya admin yang bisa memulai quiz.")
+        return
+    
+    if not context.args:
+        await update.message.reply_text(
+            "❌ **Format salah!**\n\n"
+            "**Cara yang benar:**\n"
+            "`/start_quiz ID_QUIZ`\n\n"
+            "**Contoh:**\n"
+            "`/start_quiz quiz_20241012_143022`\n\n"
+            "Lihat daftar quiz dengan `/list_quizzes`",
+            parse_mode='Markdown'
+        )
+        return
+    
+    quiz_id = context.args[0]
+    
+    # Check if quiz exists
+    quiz = quiz_manager.get_quiz(quiz_id)
+    if not quiz:
+        await update.message.reply_text(
+            f"❌ Quiz dengan ID `{quiz_id}` tidak ditemukan.\n\n"
+            "Gunakan `/list_quizzes` untuk melihat daftar quiz yang tersedia.",
+            parse_mode='Markdown'
+        )
+        return
+    
+    # Tentukan chat_id target
+    if update.effective_chat.type == 'private':
+        # Jika di private chad)
         
         # Tambah info timer
         timer_info = f"\n\n⏰ **Timer:** 60 detik (otomatis lanjut)"
