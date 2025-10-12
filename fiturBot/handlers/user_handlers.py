@@ -70,7 +70,6 @@ async def materi(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(message, parse_mode='Markdown')
 
 async def materi1(update: Update, context: ContextTypes.DEFAULT_TYPE):
-async def materi1(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handler untuk materi 1: Pengenalan Huruf & Frasa Dasar"""
     message = (
         "📖 <b>MATERI 1: Pengenalan Huruf & Frasa Dasar</b>\n\n"
@@ -435,6 +434,7 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Contoh: `/register Andi Wijaya andi@gmail.com`",
             parse_mode='Markdown'
         )
+
 
 
 
