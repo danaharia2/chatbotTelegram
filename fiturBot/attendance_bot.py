@@ -143,8 +143,8 @@ class AttendanceBot:
                         'alasan': f"Alpha {total_alpha} kali"
                     })
                 
-                # Peringatan: Izin 2 kali dan Alpha 1 kali
-                if total_izin >= 2 or total_alpha >= 1:
+                # Peringatan: Izin 2 kali dan Alpha 2 kali
+                if total_izin >= 2 or total_alpha >= 2:
                     students_to_warn.append({
                         'telegram_id': telegram_id,
                         'nama': nama,
@@ -406,3 +406,4 @@ class ClassroomAutoReminder:
         if self.reminder_thread:
             self.reminder_thread.join(timeout=5)
         return "❌ Reminder otomatis dihentikan"
+
