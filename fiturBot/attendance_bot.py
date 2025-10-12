@@ -387,13 +387,14 @@ class ClassroomAutoReminder:
                 late_students, status_msg = self.get_students_without_submission_for_coursework(
                     course_id, assignment['id']
                 )
-                
-      service                  reminder_message = self.format_reminder_message(
-                        assignment, late_students, course_id
-                    )
-                    self.send_reminder_to_group(context, group_chat_id, reminder_message)
+
+            if late_students:
+                reminder_message = self.format_reminder_message(
+                    assignment, late_students, course_id
+                )
+                self.send_reminder_to_group(context, group_chat_id, reminder_message)
                     # Tunggu 2 detik antara setiap pengiriman pesan
-                    time.sleep(2)
+                time.sleep(2)
                     
         except Exception as e:
             logger.error(f"Error in auto reminder: {e}")
@@ -845,6 +846,7 @@ class ClassroomAutoReminder:
         if self.reminder_thread:
             self.reminder_thread.join(timeout=5)
         return "❌ Reminder otomatis dihentikan"
+
 
 
 
