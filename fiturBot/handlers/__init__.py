@@ -5,7 +5,7 @@ from .admin_handlers import (
 from fiturBot.quiz_handler import (
     quiz_help, create_quiz, list_quizzes, start_quiz, next_question,
     finish_quiz, quiz_leaderboard, my_quiz_stats, handle_quiz_callback,
-    handle_quiz_creation
+    handle_quiz_message,
 )
 
 __all__ = [
@@ -22,5 +22,6 @@ __all__ = [
     'handle_quiz_callback',
     'handle_quiz_creation',
 ]
+
 
 
