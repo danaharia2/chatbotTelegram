@@ -81,20 +81,6 @@ def main():
             logger.error(f"❌ Error setting up handlers: {e}")
             logger.error(traceback.format_exc())
         
-        # Import dan setup auto-reply handler
-        try:
-            from fiturBot.auto_reply import handle_auto_reply
-            from telegram.ext import MessageHandler, filters
-            
-            # Add message handler for auto-reply (priority rendah)
-            application.add_handler(MessageHandler(
-                filters.TEXT & ~filters.COMMAND, 
-                handle_auto_reply
-            ), group=1)
-            logger.info("✅ Added auto-reply handler")
-        except Exception as e:
-            logger.error(f"❌ Error setting up auto-reply: {e}")
-        
         # Import dan setup quiz handlers
         try:
             from fiturBot.quiz_handler import (
@@ -156,3 +142,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
