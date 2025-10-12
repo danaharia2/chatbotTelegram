@@ -5,7 +5,7 @@ import json
 import os
 from datetime import datetime
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ContextTypes, CallbackQueryHandler, CommandHandler
+from telegram.ext import ContextTypes, CallbackQueryHandler, CommandHandler, MessageHandler, filters
 from config import ADMIN_IDS, GROUP_CHAT_ID
 
 logger = logging.getLogger(__name__)
@@ -62,6 +62,11 @@ class QuizManager:
             'total_questions': len(questions)
         }
         self.save_data()
+        return quiz_id
+    
+    def get_quiz(self, quiz_id):
+        """Get quiz by ID"""
+        return self.quizzes.get(quiz_id)
     
     def start_quiz(self, quiz_id, chat_id):
         """Start a quiz in a chat"""
@@ -72,7 +77,8 @@ class QuizManager:
             'quiz_id': quiz_id,
             'current_question': 0,
             'participants': {},
-            'start_time': datetime.now().isoformat()
+            'start_time': datetime.now().isoformat(),
+            'message_id': None
         }
         return True
     
@@ -104,8 +110,8 @@ class QuizManager:
         is_correct = (answer_index == current_question['correct_answer'])
         
         # Initialize user data if not exists
-        if user_id not in self.user_scores:
-            self.user_scores[user_id] = {
+        if str(user_id) not in self.user_scores:
+            self.user_scores[str(user_id)] = {
                 'username': username,
                 'total_quizzes': 0,
                 'total_score': 0,
@@ -113,22 +119,22 @@ class QuizManager:
             }
         
         # Update participant score
-        if user_id not in active_quiz['participants']:
-            active_quiz['participants'][user_id] = {
+        if str(user_id) not in active_quiz['participants']:
+            active_quiz['participants'][str(user_id)] = {
                 'username': username,
                 'score': 0,
                 'answers': []
             }
         
-        active_quiz['participants'][user_id]['answers'].append({
-            'question': active_quiz['current_question'],
+        active_quiz['participants'][str(user_id)]['answers'].append({
+            'question_index': active_quiz['current_question'],
             'answer': answer_index,
             'correct': is_correct,
             'time': datetime.now().isoformat()
         })
         
         if is_correct:
-            active_quiz['participants'][user_id]['score'] += 1
+            active_quiz['participants'][str(user_id)]['score'] += 1
         
         return True, is_correct
     
@@ -201,117 +207,14 @@ class QuizManager:
 # Global quiz manager instance
 quiz_manager = QuizManager()
 
-# Quiz creation helper
-async def create_quiz_interactive(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Interactive quiz creation"""
-    user_id = update.effective_user.id
-    
-    if user_id not in ADMIN_IDS:
-        await update.message.reply_text("❌ Hanya admin yang bisa membuat quiz.")
-        return
-    
-    context.user_data['quiz_creation'] = {
-        'step': 'title',
-        'questions': []
-    }
-    
-    await update.message.reply_text(
-        "🎯 **Membuat Quiz Baru**\n\n"
-        "Silakan kirim judul untuk quiz ini:"
-    )
-
-async def handle_quiz_creation(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle interactive quiz creation steps"""
-    user_id = update.effective_user.id
-    
-    if 'quiz_creation' not in context.user_data:
-        return
-    
-    creation_data = context.user_data['quiz_creation']
-    step = creation_data['step']
-    text = update.message.text
-    
-    if step == 'title':
-        creation_data['title'] = text
-        creation_data['step'] = 'question'
-        await update.message.reply_text(
-            "✅ Judul disimpan!\n\n"
-            "Silakan kirim pertanyaan pertama:"
-        )
-    
-    elif step == 'question':
-        creation_data['current_question'] = {
-            'question': text,
-            'options': [],
-            'correct_answer': None
-        }
-        creation_data['step'] = 'option_1'
-        await update.message.reply_text(
-            "✅ Pertanyaan disimpan!\n\n"
-            "Silakan kirim opsi jawaban pertama:"
-        )
-    
-    elif step.startswith('option_'):
-        option_num = int(step.split('_')[1])
-        creation_data['current_question']['options'].append(text)
-        
-        if option_num < 4:
-            creation_data['step'] = f'option_{option_num + 1}'
-            await update.message.reply_text(
-                f"✅ Opsi {option_num} disimpan!\n\n"
-                f"Silakan kirim opsi jawaban {option_num + 1}:"
-            )
-        else:
-            creation_data['step'] = 'correct_answer'
-            keyboard = [
-                [InlineKeyboardButton("1", callback_data="quiz_correct_1")],
-                [InlineKeyboardButton("2", callback_data="quiz_correct_2")],
-                [InlineKeyboardButton("3", callback_data="quiz_correct_3")],
-                [InlineKeyboardButton("4", callback_data="quiz_correct_4")]
-            ]
-            reply_markup = InlineKeyboardMarkup(keyboard)
-            
-            options_text = "\n".join([f"{i+1}. {opt}" for i, opt in enumerate(creation_data['current_question']['options'])])
-            
-            await update.message.reply_text(
-                f"📝 **Pertanyaan:** {creation_data['current_question']['question']}\n\n"
-                f"📋 **Opsi:**\n{options_text}\n\n"
-                f"Pilih jawaban yang benar:",
-                reply_markup=reply_markup
-            )
-    
-    elif step == 'add_more':
-        if text.lower() in ['ya', 'yes', 'y']:
-            creation_data['step'] = 'question'
-            await update.message.reply_text("Silakan kirim pertanyaan berikutnya:")
-        else:
-            # Finish quiz creation
-            quiz_id = f"quiz_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-            quiz_manager.create_quiz(
-                quiz_id,
-                creation_data['title'],
-                creation_data['questions'],
-                user_id
-            )
-            
-            await update.message.reply_text(
-                f"✅ **Quiz Berhasil Dibuat!**\n\n"
-                f"📖 Judul: {creation_data['title']}\n"
-                f"❓ Jumlah Pertanyaan: {len(creation_data['questions'])}\n"
-                f"🆔 ID: `{quiz_id}`\n\n"
-                f"Gunakan `/start_quiz {quiz_id}` untuk memulai quiz!",
-                parse_mode='Markdown'
-            )
-            del context.user_data['quiz_creation']
-
 # Command handlers
 async def quiz_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Show quiz help"""
     help_text = """
 🎯 **FITUR QUIZ BOT** 🎯
 
-**Untuk Peserta:**
-• `/join_quiz` - Bergabung dengan quiz aktif
+**Untuk Semua Peserta:**
+• `/quiz_help` - Bantuan fitur quiz
 • `/quiz_leaderboard` - Lihat peringkat global
 • `/my_quiz_stats` - Statistik quiz pribadi
 
@@ -321,20 +224,152 @@ async def quiz_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
 • `/start_quiz <quiz_id>` - Mulai quiz
 • `/next_question` - Pertanyaan berikutnya
 • `/finish_quiz` - Akhiri quiz
-• `/quiz_results` - Lihat hasil quiz terakhir
 
-**Cara Main:**
-1. Admin buat quiz dengan `/create_quiz`
-2. Admin mulai quiz dengan `/start_quiz`
-3. Peserta join dengan `/join_quiz`
-4. Jawab pertanyaan dengan tombol inline
-5. Lihat hasil di akhir quiz
+**📝 Cara Membuat & Memulai Quiz:**
+
+1. **Buat Quiz**: `/create_quiz` (ikuti instruksi)
+2. **Dapatkan ID**: Setelah selesai, bot kasih ID quiz
+3. **Start Quiz**: `/start_quiz ID_QUIZ`
+   Contoh: `/start_quiz quiz_20241012_123456`
+
+4. **Peserta Jawab**: Klik tombol jawaban di pesan quiz
+5. **Next Question**: Admin gunakan `/next_question`
+6. **Finish**: `/finish_quiz` untuk lihat hasil
+
+**🆔 Contoh ID Quiz**: `quiz_20241012_143022`
 """
-    await update.message.reply_text(help_text)
+    await update.message.reply_text(help_text, parse_mode='Markdown')
 
 async def create_quiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Start quiz creation"""
-    await create_quiz_interactive(update, context)
+    """Start quiz creation process"""
+    user_id = update.effective_user.id
+    
+    if user_id not in ADMIN_IDS:
+        await update.message.reply_text("❌ Hanya admin yang bisa membuat quiz.")
+        return
+    
+    # Initialize quiz creation process
+    context.user_data['quiz_creation'] = {
+        'step': 'title',
+        'questions': [],
+        'title': None
+    }
+    
+    await update.message.reply_text(
+        "🎯 **Membuat Quiz Baru**\n\n"
+        "Silakan kirim judul untuk quiz ini:"
+    )
+
+async def handle_quiz_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle quiz creation messages"""
+    user_id = update.effective_user.id
+    
+    # Check if user is in quiz creation mode
+    if 'quiz_creation' not in context.user_data:
+        return
+    
+    creation_data = context.user_data['quiz_creation']
+    step = creation_data['step']
+    text = update.message.text
+    
+    logger.info(f"Quiz creation - Step: {step}, User: {user_id}")
+    
+    try:
+        if step == 'title':
+            creation_data['title'] = text
+            creation_data['step'] = 'question'
+            await update.message.reply_text(
+                "✅ **Judul disimpan!**\n\n"
+                "Silakan kirim pertanyaan pertama:"
+            )
+        
+        elif step == 'question':
+            creation_data['current_question'] = {
+                'question': text,
+                'options': [],
+                'correct_answer': None
+            }
+            creation_data['step'] = 'option_1'
+            await update.message.reply_text(
+                "✅ **Pertanyaan disimpan!**\n\n"
+                "Silakan kirim opsi jawaban **pertama**:"
+            )
+        
+        elif step.startswith('option_'):
+            option_num = int(step.split('_')[1])
+            creation_data['current_question']['options'].append(text)
+            
+            if option_num < 4:
+                creation_data['step'] = f'option_{option_num + 1}'
+                await update.message.reply_text(
+                    f"✅ Opsi {option_num} disimpan!\n\n"
+                    f"Silakan kirim opsi jawaban **{option_num + 1}**:"
+                )
+            else:
+                creation_data['step'] = 'correct_answer'
+                
+                # Create inline keyboard for correct answer selection
+                keyboard = []
+                for i, option in enumerate(creation_data['current_question']['options']):
+                    keyboard.append([InlineKeyboardButton(
+                        f"Opsi {i+1}: {option}", 
+                        callback_data=f"quiz_correct_{i}"
+                    )])
+                
+                reply_markup = InlineKeyboardMarkup(keyboard)
+                
+                question_text = creation_data['current_question']['question']
+                options_text = "\n".join([f"{i+1}. {opt}" for i, opt in enumerate(creation_data['current_question']['options'])])
+                
+                await update.message.reply_text(
+                    f"📝 **Pertanyaan:** {question_text}\n\n"
+                    f"📋 **Opsi Jawaban:**\n{options_text}\n\n"
+                    "**Pilih jawaban yang benar:**",
+                    reply_markup=reply_markup
+                )
+        
+        elif step == 'add_more':
+            if text.lower() in ['ya', 'yes', 'y', 'iya', 'yup']:
+                creation_data['step'] = 'question'
+                await update.message.reply_text(
+                    "✅ **Mari tambah pertanyaan lagi!**\n\n"
+                    "Silakan kirim pertanyaan berikutnya:"
+                )
+            else:
+                # Finish quiz creation
+                quiz_id = f"quiz_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                quiz_title = creation_data['title']
+                questions = creation_data['questions']
+                
+                quiz_manager.create_quiz(
+                    quiz_id,
+                    quiz_title,
+                    questions,
+                    user_id
+                )
+                
+                # Clear creation data
+                del context.user_data['quiz_creation']
+                
+                await update.message.reply_text(
+                    f"🎉 **QUIZ BERHASIL DIBUAT!** 🎉\n\n"
+                    f"📖 **Judul:** {quiz_title}\n"
+                    f"❓ **Jumlah Pertanyaan:** {len(questions)}\n"
+                    f"🆔 **ID Quiz:** `{quiz_id}`\n\n"
+                    f"**Untuk memulai quiz, gunakan:**\n"
+                    f"`/start_quiz {quiz_id}`\n\n"
+                    f"**Atau lihat daftar quiz:** `/list_quizzes`",
+                    parse_mode='Markdown'
+                )
+                
+    except Exception as e:
+        logger.error(f"Error in quiz creation: {e}")
+        await update.message.reply_text(
+            "❌ Terjadi error saat membuat quiz. Silakan mulai ulang dengan `/create_quiz`"
+        )
+        # Clear faulty creation data
+        if 'quiz_creation' in context.user_data:
+            del context.user_data['quiz_creation']
 
 async def list_quizzes(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """List all available quizzes"""
@@ -342,13 +377,16 @@ async def list_quizzes(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("❌ Belum ada quiz yang dibuat.")
         return
     
-    quizzes_text = "📚 **DAFTAR QUIZ**\n\n"
-    for quiz_id, quiz_data in quiz_manager.quizzes.items():
-        quizzes_text += f"📖 **{quiz_data['title']}**\n"
+    quizzes_text = "📚 **DAFTAR QUIZ YANG TERSEDIA**\n\n"
+    
+    for i, (quiz_id, quiz_data) in enumerate(quiz_manager.quizzes.items(), 1):
+        quizzes_text += f"**{i}. {quiz_data['title']}**\n"
         quizzes_text += f"   🆔 `{quiz_id}`\n"
         quizzes_text += f"   ❓ {quiz_data['total_questions']} pertanyaan\n"
         quizzes_text += f"   👤 Dibuat oleh: {quiz_data['created_by']}\n"
         quizzes_text += f"   📅 {quiz_data['created_at'][:10]}\n\n"
+    
+    quizzes_text += "\n**Cara memulai:** `/start_quiz ID_QUIZ`"
     
     await update.message.reply_text(quizzes_text, parse_mode='Markdown')
 
@@ -361,22 +399,40 @@ async def start_quiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     
     if not context.args:
-        await update.message.reply_text("❌ Format: `/start_quiz <quiz_id>`", parse_mode='Markdown')
+        await update.message.reply_text(
+            "❌ **Format salah!**\n\n"
+            "**Cara yang benar:**\n"
+            "`/start_quiz ID_QUIZ`\n\n"
+            "**Contoh:**\n"
+            "`/start_quiz quiz_20241012_143022`\n\n"
+            "Lihat daftar quiz dengan `/list_quizzes`",
+            parse_mode='Markdown'
+        )
         return
     
     quiz_id = context.args[0]
     
+    # Check if quiz exists
+    quiz = quiz_manager.get_quiz(quiz_id)
+    if not quiz:
+        await update.message.reply_text(
+            f"❌ Quiz dengan ID `{quiz_id}` tidak ditemukan.\n\n"
+            "Gunakan `/list_quizzes` untuk melihat daftar quiz yang tersedia.",
+            parse_mode='Markdown'
+        )
+        return
+    
+    # Start the quiz
     if quiz_manager.start_quiz(quiz_id, update.effective_chat.id):
-        # Send first question
         question = quiz_manager.get_current_question(update.effective_chat.id)
         if question:
-            await send_question(update, context, question)
+            await send_question(update, context, question, 1, quiz['total_questions'])
         else:
             await update.message.reply_text("❌ Quiz tidak memiliki pertanyaan.")
     else:
-        await update.message.reply_text("❌ Quiz ID tidak ditemukan.")
+        await update.message.reply_text("❌ Gagal memulai quiz.")
 
-async def send_question(update: Update, context: ContextTypes.DEFAULT_TYPE, question):
+async def send_question(update: Update, context: ContextTypes.DEFAULT_TYPE, question, current_q, total_q):
     """Send question with inline keyboard"""
     keyboard = []
     for i, option in enumerate(question['options']):
@@ -389,15 +445,15 @@ async def send_question(update: Update, context: ContextTypes.DEFAULT_TYPE, ques
     
     message = await context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text=f"❓ **PERTANYAAN**\n\n{question['question']}",
+        text=f"❓ **PERTANYAAN {current_q}/{total_q}**\n\n{question['question']}",
         reply_markup=reply_markup,
         parse_mode='Markdown'
     )
     
-    # Store message ID for possible editing
-    if 'quiz_messages' not in context.chat_data:
-        context.chat_data['quiz_messages'] = []
-    context.chat_data['quiz_messages'].append(message.message_id)
+    # Store message ID in active quiz
+    chat_id = update.effective_chat.id
+    if chat_id in quiz_manager.active_quizzes:
+        quiz_manager.active_quizzes[chat_id]['message_id'] = message.message_id
 
 async def next_question(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Move to next question"""
@@ -407,35 +463,43 @@ async def next_question(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("❌ Hanya admin yang bisa mengontrol quiz.")
         return
     
-    if update.effective_chat.id not in quiz_manager.active_quizzes:
-        await update.message.reply_text("❌ Tidak ada quiz aktif.")
+    chat_id = update.effective_chat.id
+    if chat_id not in quiz_manager.active_quizzes:
+        await update.message.reply_text("❌ Tidak ada quiz aktif di chat ini.")
         return
     
-    if quiz_manager.next_question(update.effective_chat.id):
-        question = quiz_manager.get_current_question(update.effective_chat.id)
+    active_quiz = quiz_manager.active_quizzes[chat_id]
+    quiz_data = quiz_manager.get_quiz(active_quiz['quiz_id'])
+    
+    if quiz_manager.next_question(chat_id):
+        current_q = active_quiz['current_question'] + 1
+        total_q = quiz_data['total_questions']
+        question = quiz_manager.get_current_question(chat_id)
+        
         if question:
-            await send_question(update, context, question)
+            await send_question(update, context, question, current_q, total_q)
         else:
             await update.message.reply_text("❌ Tidak ada pertanyaan berikutnya.")
     else:
         # Quiz finished
-        results = quiz_manager.finish_quiz(update.effective_chat.id)
+        results = quiz_manager.finish_quiz(chat_id)
         if results:
             await show_quiz_results(update, context, results)
 
 async def finish_quiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Force finish quiz"""
+    """Force finish quiz and show results"""
     user_id = update.effective_user.id
     
     if user_id not in ADMIN_IDS:
         await update.message.reply_text("❌ Hanya admin yang bisa mengakhiri quiz.")
         return
     
-    if update.effective_chat.id not in quiz_manager.active_quizzes:
-        await update.message.reply_text("❌ Tidak ada quiz aktif.")
+    chat_id = update.effective_chat.id
+    if chat_id not in quiz_manager.active_quizzes:
+        await update.message.reply_text("❌ Tidak ada quiz aktif di chat ini.")
         return
     
-    results = quiz_manager.finish_quiz(update.effective_chat.id)
+    results = quiz_manager.finish_quiz(chat_id)
     if results:
         await show_quiz_results(update, context, results)
     else:
@@ -444,13 +508,16 @@ async def finish_quiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def show_quiz_results(update: Update, context: ContextTypes.DEFAULT_TYPE, results):
     """Show quiz results"""
     results_text = f"🏆 **HASIL QUIZ: {results['quiz_title']}** 🏆\n\n"
+    results_text += f"📊 **Total Pertanyaan:** {results['total_questions']}\n"
+    results_text += f"👥 **Total Peserta:** {len(results['participants'])}\n\n"
     
     if not results['participants']:
         results_text += "❌ Tidak ada peserta yang mengikuti quiz."
     else:
+        results_text += "**🏅 PERINGKAT:**\n\n"
         for i, (user_id, data) in enumerate(results['participants'][:10], 1):
             medal = "🥇" if i == 1 else "🥈" if i == 2 else "🥉" if i == 3 else f"{i}."
-            results_text += f"{medal} {data['username']} - {data['score']}/{results['total_questions']}\n"
+            results_text += f"{medal} **{data['username']}** - {data['score']}/{results['total_questions']}\n"
     
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
@@ -463,14 +530,16 @@ async def quiz_leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
     leaderboard = quiz_manager.get_leaderboard(10)
     
     if not leaderboard:
-        await update.message.reply_text("❌ Belum ada data leaderboard.")
+        await update.message.reply_text("❌ Belum ada data leaderboard. Ikuti quiz dulu!")
         return
     
     leaderboard_text = "🏆 **LEADERBOARD GLOBAL** 🏆\n\n"
     
     for i, (user_id, data) in enumerate(leaderboard, 1):
         medal = "🥇" if i == 1 else "🥈" if i == 2 else "🥉" if i == 3 else f"{i}."
-        leaderboard_text += f"{medal} {data['username']} - {data['total_score']} poin ({data['total_quizzes']} quiz)\n"
+        leaderboard_text += f"{medal} **{data['username']}** - {data['total_score']} poin ({data['total_quizzes']} quiz)\n"
+    
+    leaderboard_text += f"\n**Total pemain:** {len(quiz_manager.user_scores)}"
     
     await update.message.reply_text(leaderboard_text, parse_mode='Markdown')
 
@@ -478,14 +547,17 @@ async def my_quiz_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Show user's quiz statistics"""
     user_id = update.effective_user.id
     
-    if user_id not in quiz_manager.user_scores:
-        await update.message.reply_text("❌ Anda belum pernah mengikuti quiz.")
+    if str(user_id) not in quiz_manager.user_scores:
+        await update.message.reply_text(
+            "❌ Anda belum pernah mengikuti quiz.\n\n"
+            "Ikuti quiz yang aktif untuk melihat statistik Anda!"
+        )
         return
     
-    stats = quiz_manager.user_scores[user_id]
+    stats = quiz_manager.user_scores[str(user_id)]
     
     stats_text = f"📊 **STATISTIK QUIZ ANDA**\n\n"
-    stats_text += f"👤 **Username:** {stats['username']}\n"
+    stats_text += f"👤 **Nama:** {stats['username']}\n"
     stats_text += f"📈 **Total Score:** {stats['total_score']} poin\n"
     stats_text += f"🎯 **Quiz Diselesaikan:** {stats['total_quizzes']}\n"
     
@@ -493,9 +565,11 @@ async def my_quiz_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
         avg_score = stats['total_score'] / stats['total_quizzes']
         stats_text += f"📊 **Rata-rata Score:** {avg_score:.1f} per quiz\n"
     
-    stats_text += f"\n**Quiz Terakhir:**\n"
-    for quiz in stats['quizzes_taken'][-5:]:  # Last 5 quizzes
-        stats_text += f"• Score: {quiz['score']}/{quiz['total_questions']} ({quiz['date'][:10]})\n"
+    stats_text += f"\n**📅 5 Quiz Terakhir:**\n"
+    for quiz in stats['quizzes_taken'][-5:]:
+        quiz_data = quiz_manager.get_quiz(quiz['quiz_id'])
+        quiz_title = quiz_data['title'] if quiz_data else "Quiz Terhapus"
+        stats_text += f"• {quiz_title}: {quiz['score']}/{quiz['total_questions']} ({quiz['date'][:10]})\n"
     
     await update.message.reply_text(stats_text, parse_mode='Markdown')
 
@@ -506,52 +580,67 @@ async def handle_quiz_callback(update: Update, context: ContextTypes.DEFAULT_TYP
     await query.answer()
     
     data = query.data
+    user_id = query.from_user.id
+    username = query.from_user.first_name
+    chat_id = query.message.chat_id
     
-    if data.startswith("quiz_answer_"):
-        answer_index = int(data.split("_")[2])
-        user_id = query.from_user.id
-        username = query.from_user.first_name
-        
-        success, result = quiz_manager.submit_answer(
-            query.message.chat_id,
-            user_id,
-            username,
-            answer_index
-        )
-        
-        if success:
-            if result:
-                await query.edit_message_text(
-                    text=query.message.text + f"\n\n✅ **{username} menjawab benar!**",
-                    parse_mode='Markdown'
-                )
+    logger.info(f"Quiz callback - Data: {data}, User: {username}")
+    
+    try:
+        if data.startswith("quiz_answer_"):
+            answer_index = int(data.split("_")[2])
+            
+            success, result = quiz_manager.submit_answer(
+                chat_id,
+                user_id,
+                username,
+                answer_index
+            )
+            
+            if success:
+                if result:
+                    # Jawaban benar
+                    await query.edit_message_text(
+                        text=query.message.text + f"\n\n✅ **{username} menjawab benar!** 🎉",
+                        parse_mode='Markdown'
+                    )
+                else:
+                    # Jawaban salah
+                    await query.edit_message_text(
+                        text=query.message.text + f"\n\n❌ **{username} menjawab salah!**",
+                        parse_mode='Markdown'
+                    )
             else:
                 await query.edit_message_text(
-                    text=query.message.text + f"\n\n❌ **{username} menjawab salah!**",
+                    text=query.message.text + f"\n\n⚠️ {result}",
                     parse_mode='Markdown'
                 )
-        else:
-            await query.edit_message_text(
-                text=query.message.text + f"\n\n⚠️ {result}",
-                parse_mode='Markdown'
-            )
-    
-    elif data.startswith("quiz_correct_"):
-        # Handle correct answer selection during quiz creation
-        correct_answer = int(data.split("_")[2]) - 1
         
-        if 'quiz_creation' in context.user_data:
-            creation_data = context.user_data['quiz_creation']
-            creation_data['current_question']['correct_answer'] = correct_answer
-            creation_data['questions'].append(creation_data['current_question'])
-            creation_data['step'] = 'add_more'
+        elif data.startswith("quiz_correct_"):
+            # Handle correct answer selection during quiz creation
+            correct_answer = int(data.split("_")[2])
             
-            await query.edit_message_text(
-                text=query.message.text + f"\n\n✅ Jawaban benar disimpan: Opsi {correct_answer + 1}",
-                parse_mode='Markdown'
-            )
-            
-            await context.bot.send_message(
-                chat_id=query.message.chat_id,
-                text="✅ Pertanyaan berhasil disimpan!\n\nTambah pertanyaan lagi? (ya/tidak)"
-            )
+            if 'quiz_creation' in context.user_data:
+                creation_data = context.user_data['quiz_creation']
+                creation_data['current_question']['correct_answer'] = correct_answer
+                creation_data['questions'].append(creation_data['current_question'])
+                creation_data['step'] = 'add_more'
+                
+                await query.edit_message_text(
+                    text=query.message.text + f"\n\n✅ **Jawaban benar disimpan: Opsi {correct_answer + 1}**",
+                    parse_mode='Markdown'
+                )
+                
+                await context.bot.send_message(
+                    chat_id=query.message.chat_id,
+                    text="✅ **Pertanyaan berhasil disimpan!**\n\n"
+                         "Mau tambah pertanyaan lagi?\n"
+                         "Ketik **`ya`** untuk tambah pertanyaan\n"
+                         "Ketik **`tidak`** untuk selesai"
+                )
+                
+    except Exception as e:
+        logger.error(f"Error in quiz callback: {e}")
+        await query.edit_message_text(
+            text=query.message.text + "\n\n❌ Terjadi error saat memproses jawaban."
+        )
