@@ -33,7 +33,8 @@ def main():
         from fiturBot.handlers import (
             start, status, test_connection, get_my_info, register, absen, test_classroom,
             admin_help, admin_stats, reset_attendance, force_attendance_check, export_data,
-            manual_kick, list_warnings, classroom_reminder_now, class_reminder_now, check_topics, materi, materi1, materi2
+            manual_kick, list_warnings, classroom_reminder_now, class_reminder_now, check_topics, materi, materi1, materi2, 
+            start_auto_reminder, stop_auto_reminder, test_auto_reminder
         )
         
         # Add command handlers
@@ -58,6 +59,9 @@ def main():
             ("test_classroom", test_classroom),
             ("class_reminder", class_reminder_now),
             ("check_topics", check_topics),
+            ("start_reminder", start_auto_reminder),
+            ("stop_reminder", stop_auto_reminder),
+            ("test_reminder", test_auto_reminder),
         ]
         
         for command, handler in commands:
@@ -89,4 +93,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+
 
