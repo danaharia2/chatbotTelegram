@@ -84,7 +84,7 @@ def main():
         # Import dan setup quiz handlers
         try:
             from fiturBot.quiz_handler import (
-                quiz_help, create_quiz, list_quizzes, start_quiz_auto, start_quiz_manual, next_question, 
+                quiz_help, create_quiz, list_quizzes, start_quiz, next_question, 
                 finish_quiz, quiz_leaderboard, my_quiz_stats, handle_quiz_callback,
                 handle_quiz_message,
             )
@@ -95,8 +95,7 @@ def main():
                 ("quiz_help", quiz_help),
                 ("create_quiz", create_quiz),
                 ("list_quizzes", list_quizzes),
-                ("start_quiz", start_quiz_auto),  # Auto-next version
-                ("start_quiz_manual", start_quiz_manual),
+                ("start_quiz", start_quiz),
                 ("next_question", next_question),
                 ("finish_quiz", finish_quiz),
                 ("quiz_leaderboard", quiz_leaderboard),
@@ -149,6 +148,7 @@ def main():
 
 if __name__ == '__main__':
     main()
+
 
 
 
