@@ -9,6 +9,7 @@ import schedule
 import time
 from datetime import datetime, timedelta
 from threading import Thread
+from googleapiclient.discovery import build
 
 logger = logging.getLogger(__name__)
 
@@ -174,7 +175,20 @@ class AttendanceBot:
         df = self.get_student_data()
         # Filter hanya siswa yang memiliki email
         students_with_email = df[df['Email'].notna() & (df['Email'] != '')]
-        return students_with_email['Email'].tolist()
+        return students_with_email['Email'].tolist() 
+
+    # Dalam class AttendanceBot, tambahkan method ini:
+
+    def initialize_classroom_service(self):
+        """Inisialisasi Google Classroom service"""
+        try:
+            if not hasattr(self, 'classroom_service') or self.classroom_service is None:
+                creds = self.get_credentials()
+                self.classroom_service = build('classroom', 'v1', credentials=creds)
+            return self.classroom_service
+        except Exception as e:
+            logger.error(f"Error initializing Classroom service: {e}")
+            return def
     
     def get_students_without_submission(self, course_id, coursework_id):
         """Dapatkan siswa yang belum mengumpulkan tugas berdasarkan email di spreadsheet"""
@@ -414,5 +428,6 @@ class ClassroomAutoReminder:
         if self.reminder_thread:
             self.reminder_thread.join(timeout=5)
         return "❌ Reminder otomatis dihentikan"
+
 
 
