@@ -1,9 +1,12 @@
-# config.py
+# config.py (perbaikan bagian GROUP_CHAT_ID)
 import os
 from dotenv import load_dotenv
 import base64
 import json
 import sys
+import logging
+
+logger = logging.getLogger(__name__)
 
 # ==================== ENVIRONMENT DETECTION ====================
 def is_railway():
@@ -26,30 +29,56 @@ if is_local():
 # ==================== TELEGRAM CONFIG ====================
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 
-GROUP_CHAT_ID_STR = os.getenv('GROUP_CHAT_ID', '')
-try:
-    GROUP_CHAT_ID = int(GROUP_CHAT_ID_STR) if GROUP_CHAT_ID_STR else None
-except (ValueError, TypeError):
-    GROUP_CHAT_ID = None
+# Perbaikan: Handle GROUP_CHAT_ID dengan lebih robust
+GROUP_CHAT_ID_STR = os.getenv('GROUP_CHAT_ID', '').strip()
+
+# Debug: Print nilai untuk troubleshooting
+print(f"🔧 DEBUG: GROUP_CHAT_ID_STR = '{GROUP_CHAT_ID_STR}'")
+
+GROUP_CHAT_ID = None
+if GROUP_CHAT_ID_STR:
+    try:
+        # Hapus karakter non-digit kecuali minus
+        cleaned_str = ''.join(c for c in GROUP_CHAT_ID_STR if c.isdigit() or c == '-')
+        GROUP_CHAT_ID = int(cleaned_str)
+        print(f"✅ GROUP_CHAT_ID berhasil dikonversi: {GROUP_CHAT_ID}")
+    except (ValueError, TypeError) as e:
+        print(f"❌ Error converting GROUP_CHAT_ID: {e}")
+        GROUP_CHAT_ID = None
+else:
+    print("⚠️  GROUP_CHAT_ID tidak ditemukan di environment variables")
 
 # Admin IDs (convert string to list of integers)
 admin_ids_str = os.getenv('ADMIN_IDS', '')
-#ADMIN_IDS = [int(id.strip()) for id in admin_ids_str.split(',') if id.strip()] if admin_ids_str else []
+ADMIN_IDS = []
+
 if admin_ids_str:
     try:
-        if admin_ids_str.startswith('[') and admin_ids_str.endswith(']'):
-            ADMIN_IDS = [int(id.strip()) for id in admin_ids_str[1:-1].split(',') if id.strip()]
+        # Handle berbagai format: [1,2,3] atau "1,2,3"
+        cleaned_str = admin_ids_str.strip()
+        if cleaned_str.startswith('[') and cleaned_str.endswith(']'):
+            # Format: [1,2,3]
+            ids_list = cleaned_str[1:-1].split(',')
         else:
-            ADMIN_IDS = [int(id.strip()) for id in admin_ids_str.split(',') if id.strip()]
+            # Format: 1,2,3
+            ids_list = cleaned_str.split(',')
+        
+        ADMIN_IDS = []
+        for id_str in ids_list:
+            cleaned_id = id_str.strip()
+            if cleaned_id:  # Skip empty strings
+                ADMIN_IDS.append(int(cleaned_id))
+        
+        print(f"✅ ADMIN_IDS berhasil dikonversi: {ADMIN_IDS}")
     except (ValueError, TypeError) as e:
-        print(f"⚠️  Error parsing ADMIN_IDS: {e}")
+        print(f"❌ Error parsing ADMIN_IDS: {e}")
+        ADMIN_IDS = []
 else:
-    ADMIN_IDS = []
+    print("⚠️  ADMIN_IDS tidak ditemukan di environment variables")
 
 # ==================== GOOGLE SHEETS CONFIG ====================
 SPREADSHEET_URL = os.getenv('SPREADSHEET_URL')
 WORKSHEET_NAME = os.getenv('WORKSHEET_NAME', 'Sheet1')
-#CREDENTIALS_FILE = os.getenv('CREDENTIALS_FILE', 'credentials.json')
 
 # ==================== GOOGLE CLASSROOM CONFIG ====================
 CLASSROOM_COURSE_ID = os.getenv('CLASSROOM_COURSE_ID', 'your_classroom_course_id_here')
@@ -69,9 +98,16 @@ ENABLE_CLASS_REMINDER = os.getenv('ENABLE_CLASS_REMINDER', 'true').lower() == 't
 
 # ==================== TOPIC CONFIG ====================
 # Topic IDs untuk berbagai jenis pesan
-ANNOUNCEMENT_TOPIC_ID = int(os.getenv('ANNOUNCEMENT_TOPIC_ID', '1'))  # Default ke General
-ASSIGNMENT_TOPIC_ID = int(os.getenv('ASSIGNMENT_TOPIC_ID', '1'))      # Default ke General
-ATTENDANCE_TOPIC_ID = int(os.getenv('ATTENDANCE_TOPIC_ID', '1'))      # Default ke General
+def safe_int_convert(value, default=1):
+    """Safely convert string to integer"""
+    try:
+        return int(value)
+    except (ValueError, TypeError):
+        return default
+
+ANNOUNCEMENT_TOPIC_ID = safe_int_convert(os.getenv('ANNOUNCEMENT_TOPIC_ID', '1'))
+ASSIGNMENT_TOPIC_ID = safe_int_convert(os.getenv('ASSIGNMENT_TOPIC_ID', '1'))
+ATTENDANCE_TOPIC_ID = safe_int_convert(os.getenv('ATTENDANCE_TOPIC_ID', '1'))
 
 # Topic Names untuk reference
 TOPIC_NAMES = {
@@ -100,10 +136,10 @@ def setup_credentials():
         try:
             print("🔧 Decoding CREDENTIALS_BASE64...")
             # Decode base64 credentials
-            creds_data = base64.b64decode(os.environ['CREDENTIALS_BASE64']).decode()
+            creds_data = base64.b64decode(os.environ['CREDENTIALS_BASE64']).decode('utf-8')
             
             # Write to credentials.json
-            with open('credentials.json', 'w') as f:
+            with open('credentials.json', 'w', encoding='utf-8') as f:
                 f.write(creds_data)
             
             print("✅ credentials.json created from CREDENTIALS_BASE64")
@@ -182,7 +218,11 @@ def validate_config():
         if not var_value:
             errors.append(f"{var_name} tidak ditemukan di .env")
         else:
-            print(f"✅ {var_name}: {'***' if 'TOKEN' in var_name else var_value}")
+            if var_name == 'BOT_TOKEN':
+                display_value = '***' + var_value[-4:] if len(var_value) > 4 else '***'
+            else:
+                display_value = var_value
+            print(f"✅ {var_name}: {display_value}")
     
     # Validasi file credentials
     if not CREDENTIALS_FILE:
@@ -195,7 +235,7 @@ def validate_config():
 
     # Validasi format GROUP_CHAT_ID
     if GROUP_CHAT_ID and GROUP_CHAT_ID > 0:
-        errors.append("GROUP_CHAT_ID harus negatif untuk grup super (format: -1001234567890)")
+        warnings.append("GROUP_CHAT_ID seharusnya negatif untuk grup super (format: -1001234567890)")
     
     # Validasi ADMIN_IDS
     if not ADMIN_IDS:
@@ -238,5 +278,7 @@ def validate_config():
     return True
 
 # Jalankan validasi saat module di-load
-if __name__ != '__name__':
+if __name__ == "__main__":
+    validate_config()
+else:
     config_valid = validate_config()
