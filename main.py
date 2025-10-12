@@ -86,7 +86,7 @@ def main():
             from fiturBot.quiz_handler import (
                 quiz_help, create_quiz, list_quizzes, start_quiz, next_question, 
                 finish_quiz, quiz_leaderboard, my_quiz_stats, handle_quiz_callback,
-                handle_quiz_creation
+                handle_quiz_message,
             )
             from telegram.ext import CallbackQueryHandler
             
@@ -105,6 +105,12 @@ def main():
             for command, handler in quiz_commands:
                 application.add_handler(CommandHandler(command, handler))
                 logger.info(f"✅ Added quiz handler: /{command}")
+
+            application.add_handler(MessageHandler(
+                filters.TEXT & ~filters.COMMAND, 
+                handle_quiz_message
+            ), group=1)
+            logger.info("✅ Added quiz message handler")
             
             # Add callback query handler for quiz
             application.add_handler(CallbackQueryHandler(handle_quiz_callback, pattern="^quiz_"))
@@ -142,4 +148,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+
 
