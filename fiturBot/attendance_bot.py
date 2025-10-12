@@ -388,8 +388,7 @@ class ClassroomAutoReminder:
                     course_id, assignment['id']
                 )
                 
-                if late_students:
-                    reminder_message = self.format_reminder_message(
+      service                  reminder_message = self.format_reminder_message(
                         assignment, late_students, course_id
                     )
                     self.send_reminder_to_group(context, group_chat_id, reminder_message)
@@ -606,7 +605,7 @@ class ClassroomAutoReminder:
                 return self.classroom_service
         except Exception as e:
             logger.error(f"Error initializing Classroom service: {e}")
-            return def
+            return None
     
     def get_students_without_submission(self, course_id, coursework_id):
         """Dapatkan siswa yang belum mengumpulkan tugas berdasarkan email di spreadsheet"""
@@ -846,6 +845,7 @@ class ClassroomAutoReminder:
         if self.reminder_thread:
             self.reminder_thread.join(timeout=5)
         return "❌ Reminder otomatis dihentikan"
+
 
 
 
