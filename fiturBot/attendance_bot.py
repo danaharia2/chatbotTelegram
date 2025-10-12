@@ -163,4 +163,197 @@ class AttendanceBot:
                 self.worksheet.update_cell(idx + 2, 6, 'Belum Absen')  # Reset status terakhir
             logger.info("Status kehadiran harian direset")
         except Exception as e:
+
             logger.error(f"Error resetting attendance: {e}")
+
+class ClassroomAutoReminder:
+    def __init__(self, bot_instance):
+        self.bot = bot_instance
+        self.running = False
+        self.reminder_thread = None
+    
+    def get_all_coursework(self, course_id):
+        """Ambil semua tugas dari course tertentu"""
+        try:
+            coursework = self.bot.classroom_service.courses().courseWork().list(
+                courseId=course_id
+            ).execute()
+            
+            active_assignments = []
+            if coursework.get('courseWork'):
+                for assignment in coursework['courseWork']:
+                    # Cek apakah tugas masih aktif (belum lewat due date)
+                    if assignment.get('dueDate'):
+                        due_date = datetime(
+                            assignment['dueDate']['year'],
+                            assignment['dueDate']['month'], 
+                            assignment['dueDate']['day']
+                        )
+                        # Jika due date masih di masa depan atau hari ini
+                        if due_date >= datetime.now().replace(hour=0, minute=0, second=0, microsecond=0):
+                            active_assignments.append(assignment)
+            
+            return active_assignments
+        except Exception as e:
+            logger.error(f"Error getting coursework: {e}")
+            return []
+    
+    def get_students_without_submission_for_coursework(self, course_id, coursework_id):
+        """Dapatkan siswa yang belum mengumpulkan tugas tertentu"""
+        try:
+            student_emails = self.bot.get_student_emails()
+            
+            if not student_emails:
+                return [], "Tidak ada email siswa terdaftar"
+            
+            # Dapatkan submission
+            submissions = self.bot.classroom_service.courses().courseWork().studentSubmissions().list(
+                courseId=course_id,
+                courseWorkId=coursework_id
+            ).execute()
+            
+            submitted_emails = []
+            if submissions.get('studentSubmissions'):
+                for submission in submissions['studentSubmissions']:
+                    if submission['state'] == 'TURNED_IN' or submission['state'] == 'RETURNED':
+                        student_profile = self.bot.classroom_service.userProfiles().get(
+                            userId=submission['userId']
+                        ).execute()
+                        student_email = student_profile.get('emailAddress', '')
+                        if student_email:
+                            submitted_emails.append(student_email.lower())
+            
+            # Siswa yang belum submit
+            students_without_submission = []
+            for email in student_emails:
+                if email.lower() not in submitted_emails:
+                    students_without_submission.append(email)
+            
+            return students_without_submission, "Berhasil memeriksa"
+            
+        except Exception as e:
+            logger.error(f"Error checking submissions: {e}")
+            return [], f"Error: {str(e)}"
+    
+    def format_reminder_message(self, assignment, late_students, course_id):
+        """Format pesan reminder yang akan dikirim ke grup"""
+        due_date = f"{assignment['dueDate']['day']}/{assignment['dueDate']['month']}/{assignment['dueDate']['year']}"
+        
+        # Dapatkan data siswa yang terlambat
+        df = self.bot.get_student_data()
+        late_students_data = df[df['Email'].isin(late_students)]
+        
+        student_list = []
+        for _, student in late_students_data.iterrows():
+            student_info = f"• {student['Nama']}"
+            if student.get('Username') and student['Username'] != '-':
+                student_info += f" (@{student['Username'].replace('@', '')})"
+            student_list.append(student_info)
+        
+        message = (
+            f"📢 **REMINDER TUGAS CLASSROOM**\n\n"
+            f"📚 **Tugas:** {assignment['title']}\n"
+            f"⏰ **Deadline:** {due_date}\n"
+            f"❌ **Belum mengumpulkan:** {len(late_students)} siswa\n\n"
+        )
+        
+        if late_students:
+            message += f"**Siswa yang belum mengumpulkan:**\n{chr(10).join(student_list)}\n\n"
+        
+        days_left = (datetime(
+            assignment['dueDate']['year'],
+            assignment['dueDate']['month'],
+            assignment['dueDate']['day']
+        ) - datetime.now()).days
+        
+        if days_left == 0:
+            message += "🚨 **HARI INI BATAS AKHIR PENGUMPULAN!**\n"
+        elif days_left == 1:
+            message += "⚠️ **BESOK BATAS AKHIR PENGUMPULAN!**\n"
+        elif days_left > 1:
+            message += f"📅 **Sisa waktu: {days_left} hari**\n"
+        else:
+            message += "❌ **TUGAS SUDAH MELEWATI BATAS WAKTU**\n"
+        
+        message += f"\n🔗 **Link Tugas:** https://classroom.google.com/c/{course_id}/a/{assignment['id']}/details"
+        
+        return message
+    
+    def send_reminder_to_group(self, context, chat_id, message):
+        """Kirim reminder ke grup"""
+        try:
+            context.bot.send_message(
+                chat_id=chat_id,
+                text=message,
+                parse_mode='Markdown'
+            )
+            logger.info(f"Reminder sent to group {chat_id}")
+        except Exception as e:
+            logger.error(f"Error sending reminder: {e}")
+    
+    def check_and_send_reminders(self, context, course_id, group_chat_id):
+        """Cek semua tugas aktif dan kirim reminder"""
+        try:
+            assignments = self.get_all_coursework(course_id)
+            
+            if not assignments:
+                logger.info("No active assignments found")
+                return
+            
+            for assignment in assignments:
+                late_students, status_msg = self.get_students_without_submission_for_coursework(
+                    course_id, assignment['id']
+                )
+                
+                if late_students:
+                    reminder_message = self.format_reminder_message(
+                        assignment, late_students, course_id
+                    )
+                    self.send_reminder_to_group(context, group_chat_id, reminder_message)
+                
+                # Tunggu sebentar antara setiap tugas
+                time.sleep(2)
+                    
+        except Exception as e:
+            logger.error(f"Error in auto reminder: {e}")
+    
+    def start_daily_reminders(self, context, course_id, group_chat_id):
+        """Mulai reminder harian otomatis"""
+        if self.running:
+            return "Reminder sudah berjalan"
+        
+        self.running = True
+        
+        def reminder_job():
+            while self.running:
+                try:
+                    # Jalankan setiap hari jam 08:00
+                    schedule.every().day.at("08:00").do(
+                        self.check_and_send_reminders, context, course_id, group_chat_id
+                    )
+                    
+                    # Jalankan juga jam 18:00 untuk reminder sore
+                    schedule.every().day.at("18:00").do(
+                        self.check_and_send_reminders, context, course_id, group_chat_id
+                    )
+                    
+                    while self.running:
+                        schedule.run_pending()
+                        time.sleep(60)  # Cek setiap menit
+                        
+                except Exception as e:
+                    logger.error(f"Error in reminder job: {e}")
+                    time.sleep(300)  # Tunggu 5 menit jika error
+        
+        self.reminder_thread = Thread(target=reminder_job)
+        self.reminder_thread.daemon = True
+        self.reminder_thread.start()
+        
+        return "✅ Reminder harian otomatis telah diaktifkan!\nBot akan mengecek setiap hari jam 08:00 dan 18:00"
+    
+    def stop_reminders(self):
+        """Hentikan reminder otomatis"""
+        self.running = False
+        if self.reminder_thread:
+            self.reminder_thread.join(timeout=5)
+        return "❌ Reminder otomatis dihentikan"
