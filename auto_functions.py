@@ -13,6 +13,9 @@ logger = logging.getLogger(__name__)
 async def auto_check_attendance(context: ContextTypes.DEFAULT_TYPE):
     """Fungsi otomatis untuk mengecek dan mengeluarkan murid"""
     try:
+        # Validasi GROUP_CHAT_ID
+        if not GROUP_CHAT_ID or not isinstance(GROUP_CHAT_ID, int):
+            logger.error("❌ GROUP_CHAT_ID tidak valid untuk auto_check_attendance")
         bot = AttendanceBot()
         students_to_kick, students_to_warn = bot.check_auto_kick_conditions()
         
@@ -157,4 +160,5 @@ Have a nice day & спасибо! 🌟"""
 async def periodic_check(context: ContextTypes.DEFAULT_TYPE):
     """Pengecekan periodik"""
     await auto_check_attendance(context)
+
 
