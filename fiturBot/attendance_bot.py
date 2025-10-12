@@ -5,6 +5,10 @@ import logging
 from google.oauth2.service_account import Credentials
 from config import SCOPES, CREDENTIALS_FILE, SPREADSHEET_URL, WORKSHEET_NAME, CLASSROOM_COURSE_ID
 from .classroom_manager import ClassroomManager
+import schedule
+import time
+from datetime import datetime, timedelta
+from threading import Thread
 
 logger = logging.getLogger(__name__)
 
@@ -91,21 +95,21 @@ class AttendanceBot:
                     if status == 'Alpha':
                         # Update Total Alpha (angka) dan Status Terakhir (teks)
                         new_alpha = current_alpha + 1
-                        self.worksheet.update_cell(idx + 2, 4, new_alpha)  # Kolom D: Total Alpha (angka)
-                        self.worksheet.update_cell(idx + 2, 6, 'Alpha')     # Kolom F: Status Terakhir (teks)
+                        self.worksheet.update_cell(idx + 2, 5, new_alpha)  # Kolom D: Total Alpha (angka)
+                        self.worksheet.update_cell(idx + 2, 7, 'Alpha')     # Kolom F: Status Terakhir (teks)
                         logger.info(f"✅ Updated Alpha for {row['Nama']}: {current_alpha} → {new_alpha}")
 
                     elif status == 'Izin':
                         # Update Total Izin (angka) dan Status Terakhir (teks)
                         new_izin = current_izin + 1
-                        self.worksheet.update_cell(idx + 2, 5, new_izin)   # Kolom E: Total Izin (angka)
-                        self.worksheet.update_cell(idx + 2, 6, 'Izin')     # Kolom F: Status Terakhir (teks)
+                        self.worksheet.update_cell(idx + 2, 6, new_izin)   # Kolom E: Total Izin (angka)
+                        self.worksheet.update_cell(idx + 2, 7, 'Izin')     # Kolom F: Status Terakhir (teks)
                         logger.info(f"✅ Updated Izin for {row['Nama']}: {current_izin} → {new_izin}")
 
                     # Untuk status 'Hadir', hanya update status terakhir saja
                     elif status == 'Hadir':
                         # Hanya update Status Terakhir (teks), angka tetap
-                        self.worksheet.update_cell(idx + 2, 6, 'Hadir')    # Kolom F: Status Terakhir (teks)
+                        self.worksheet.update_cell(idx + 2, 7, 'Hadir')    # Kolom F: Status Terakhir (teks)
                         logger.info(f"✅ Updated status for {row['Nama']}: Hadir")
                     
                     logger.info(f"✅ Updated record for {row['Nama']}: {status}")
@@ -163,8 +167,53 @@ class AttendanceBot:
                 self.worksheet.update_cell(idx + 2, 6, 'Belum Absen')  # Reset status terakhir
             logger.info("Status kehadiran harian direset")
         except Exception as e:
-
             logger.error(f"Error resetting attendance: {e}")
+
+    def get_student_emails(self):
+        """Ambil daftar email siswa dari spreadsheet"""
+        df = self.get_student_data()
+        # Filter hanya siswa yang memiliki email
+        students_with_email = df[df['Email'].notna() & (df['Email'] != '')]
+        return students_with_email['Email'].tolist()
+    
+    def get_students_without_submission(self, course_id, coursework_id):
+        """Dapatkan siswa yang belum mengumpulkan tugas berdasarkan email di spreadsheet"""
+        try:
+            # Dapatkan email siswa yang terdaftar
+            student_emails = self.get_student_emails()
+        
+            if not student_emails:
+                return [], "Tidak ada email siswa yang terdaftar di spreadsheet"
+        
+            # Dapatkan submission dari Classroom
+            submissions = self.classroom_service.courses().courseWork().studentSubmissions().list(
+                courseId=course_id,
+                courseWorkId=coursework_id
+            ).execute()
+        
+            submitted_emails = []
+            if submissions.get('studentSubmissions'):
+                for submission in submissions['studentSubmissions']:
+                    # Dapatkan email student dari submission
+                    student_profile = self.classroom_service.userProfiles().get(
+                    userId=submission['userId']
+                    ).execute()
+                    student_email = student_profile.get('emailAddress', '')
+                    if student_email:
+                        submitted_emails.append(student_email.lower())
+        
+            # Cari siswa yang terdaftar tapi belum submit
+            students_without_submission = []
+            for email in student_emails:
+                if email.lower() not in submitted_emails:
+                    students_without_submission.append(email)
+        
+            return students_without_submission, f"Berhasil memeriksa {len(student_emails)} siswa terdaftar"
+        
+        except Exception as e:
+            logger.error(f"Error checking submissions: {e}")
+            return [], f"Error: {str(e)}"
+        
 
 class ClassroomAutoReminder:
     def __init__(self, bot_instance):
