@@ -2,6 +2,11 @@
 import logging
 from telegram.ext import Application, CommandHandler
 from datetime import time
+from fiturBot.quiz_handler import (
+    quiz_help, create_quiz, list_quizzes, start_quiz, next_question, 
+    finish_quiz, quiz_leaderboard, my_quiz_stats, handle_quiz_callback,
+    handle_quiz_creation
+)
 
 # Setup logging
 logging.basicConfig(
@@ -62,11 +67,30 @@ def main():
             ("start_reminder", start_auto_reminder),
             ("stop_reminder", stop_auto_reminder),
             ("test_reminder", test_auto_reminder),
+            ("quiz_help", quiz_help),
+            ("create_quiz", create_quiz),
+            ("list_quizzes", list_quizzes),
+            ("start_quiz", start_quiz),
+            ("next_question", next_question),
+            ("finish_quiz", finish_quiz),
+            ("quiz_leaderboard", quiz_leaderboard),
+      time
+            ("my_quiz_stats", my_quiz_stats),
         ]
         
         for command, handler in commands:
             application.add_handler(CommandHandler(command, handler))
-            logger.info(f"✅ Added handler: /{command}")
+            logger.info(f"✅ Added handler: /{command}") 
+
+        application.add_handler(CallbackQueryHandler(handle_quiz_callback, pattern="^quiz_"))
+
+        # Add message handler for quiz creation
+        application.add_handler(MessageHandler(
+            filters.TEXT & ~filters.COMMAND, 
+        handle_quiz_creation
+        ), group=1)
+
+        logger.info("✅ Added quiz handlers")
         
         # Setup job queue for scheduled tasks
         if application.job_queue:
@@ -93,5 +117,6 @@ def main():
 
 if __name__ == '__main__':
     main()
+
 
 
