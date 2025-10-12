@@ -1,4 +1,4 @@
-kharashochen'chen'rom telegram import Update
+from telegram import Update
 from telegram.ext import ContextTypes
 import logging
 from ..attendance_bot import AttendanceBot
@@ -404,7 +404,7 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         # Tambahkan ke spreadsheet
         try:
-            new_row = [nama, user.id, f"@{user.username}" if user.username else "-", email, 0, 0, "Belum Absen", "Auto-registered"]
+            new_row = [nama, user.id, email, f"@{user.username}" if user.username else "-", 0, 0, "Belum Absen", "Auto-registered"]
             bot.worksheet.append_row(new_row)
             
             confirmation_msg = (
@@ -434,6 +434,7 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Contoh: `/register Andi Wijaya andi@gmail.com`",
             parse_mode='Markdown'
         )
+
 
 
 
