@@ -603,7 +603,7 @@ class ClassroomAutoReminder:
             if not hasattr(self, 'classroom_service') or self.classroom_service is None:
                 creds = self.get_credentials()
                 self.classroom_service = build('classroom', 'v1', credentials=creds)
-            return self.classroom_service
+                return self.classroom_service
         except Exception as e:
             logger.error(f"Error initializing Classroom service: {e}")
             return def
@@ -618,17 +618,17 @@ class ClassroomAutoReminder:
                 return [], "Tidak ada email siswa yang terdaftar di spreadsheet"
         
             # Dapatkan submission dari Classroom
-            submissions = self.classroom_service.courses().courseWork().studentSubmissions().list(
-                courseId=course_id,
-                courseWorkId=coursework_id
-            ).execute()
+                submissions = self.classroom_service.courses().courseWork().studentSubmissions().list(
+                    courseId=course_id,
+                    courseWorkId=coursework_id
+                ).execute()
         
-            submitted_emails = []
+                submitted_emails = []
             if submissions.get('studentSubmissions'):
                 for submission in submissions['studentSubmissions']:
                     # Dapatkan email student dari submission
                     student_profile = self.classroom_service.userProfiles().get(
-                    userId=submission['userId']
+                        userId=submission['userId']
                     ).execute()
                     student_email = student_profile.get('emailAddress', '')
                     if student_email:
@@ -846,6 +846,7 @@ class ClassroomAutoReminder:
         if self.reminder_thread:
             self.reminder_thread.join(timeout=5)
         return "❌ Reminder otomatis dihentikan"
+
 
 
 
