@@ -3,7 +3,7 @@ from telegram.ext import ContextTypes
 import logging
 import io
 from datetime import datetime, timedelta
-from ..attendance_bot import AttendanceBot
+from ..attendance_bot import AttendanceBot, ClassroomAutoReminder
 from auto_functions import send_classroom_reminder, send_class_reminder, auto_check_attendance
 from config import ADMIN_IDS, GROUP_CHAT_ID, GOOGLE_MEET_LINK
 from .topic_utils import ANNOUNCEMENT_TOPIC_ID
@@ -181,15 +181,6 @@ async def list_warnings(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(f"❌ Error: {e}")
 
 @admin_required
-async def classroom_reminder_now(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Kirim reminder classroom sekarang - ADMIN ONLY"""
-    try:
-        await send_classroom_reminder(context)
-        await update.message.reply_text("✅ Reminder classroom berhasil dikirim!")
-    except Exception as e:
-        await update.message.reply_text(f"❌ Error: {e}")
-
-@admin_required
 async def class_reminder_now(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Kirim reminder kelas sekarang - ADMIN ONLY"""
     try:
@@ -220,43 +211,58 @@ async def check_topics(update: Update, context: ContextTypes.DEFAULT_TYPE):
 @admin_required
 async def admin_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Help command khusus admin"""
+    user_id = update.effective_user.id
+
+    if user_id not in ADMIN_IDS:
+        await update.message.reply_text("❌ Hanya admin yang bisa menggunakan perintah ini.")
+        return
+
     help_message = (
-        "👑 **PANDUAN PERINTAH ADMIN**\n\n"
+        "👑 PANDUAN PERINTAH ADMIN\n\n"
         
-        "📊 **MANAJEMEN DATA:**\n"
+        "📊 MANAJEMEN DATA:\n"
         "• `/admin_stats` - Lihat statistik lengkap\n"
         "• `/export_data` - Export data ke CSV\n"
         "• `/list_warnings` - Lihat daftar peringatan\n\n"
         
-        "🔄 **RESET & MAINTENANCE:**\n"
+        "🔄 RESET & MAINTENANCE:\n"
         "• `/reset_attendance confirm` - Reset SEMUA data kehadiran\n"
         "• `/force_check` - Paksa pengecekan kehadiran otomatis\n\n"
         
-        "👤 **MANAJEMEN MURID:**\n"
+        "👤 MANAJEMEN MURID:\n"
         "• `/manual_kick 123456789 Alasan` - Keluarkan murid manual\n"
         "   Contoh: `/manual_kick 123456789 Alpha 3 kali`\n\n"
         
-        "🔔 **SISTEM REMINDER:**\n"
+        "🔔 SISTEM REMINDER:\n"
         "• `/classroom_reminder` - Kirim reminder tugas sekarang\n"
+        "**Langkah-langkahnya:**\n"
+        "1. **Tambahkan kolom Email** di spreadsheet\n"
+        "2. **Isi email siswa** yang sesuai dengan email Google Classroom mereka\n"
+        "3. **Dapatkan Course ID & Coursework ID:**\n"
+        "   • Buka classroom.google.com\n"
+        "   • Course ID: dari URL `.../course/`**123456789**\n"
+        "   • Coursework ID: dari URL tugas `.../view/`**987654321**\n"
+        "4. **Gunakan perintah:**\n"
+        "   `/classroom_reminder NzgxOTM4ODI5NTEz 987654321`\n\n"
         "• `/class_reminder` - Kirim reminder kelas sekarang\n\n"
         
-        "⚙️ **SISTEM & INFO:**\n"
+        "⚙️ SISTEM & INFO:\n"
         "• `/check_topics` - Cek informasi topik grup\n"
         "• `/test` - Test koneksi Google Sheets\n\n"
         
-        "📋 **FITUR OTOMATIS:**\n"
-        "• Auto-kick: Alpha 3x atau tidak hadir berturut-turut\n"
+        "📋 FITUR OTOMATIS:\n"
+        "• Auto-kick: Alpha 3x atau Izin 3x\n"
         "• Reminder tugas: Setiap hari jam 10:00\n"
         "• Reminder kelas: Minggu 18:00 & Senin 10:00\n"
         "• Pengecekan: Setiap hari jam 08:00 & 18:00\n\n"
         
-        "💡 **Tips Admin:**\n"
+        "💡 Tips Admin:\n"
         "• Gunakan /force_check untuk tes fitur auto-kick\n"
         "• Export data secara berkala untuk backup\n"
         "• Cek /list_warnings untuk monitoring murid"
     )
     
-    await update.message.reply_text(help_message)
+    await update.message.reply_text(help_message, parse_mode='Markdown')
 
 @admin_required
 async def test_classroom(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -287,4 +293,159 @@ async def test_classroom(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(message, parse_mode='Markdown')
         
     except Exception as e:
+        await update.message.reply_text(f"❌ Error: {str(e)}")
+
+
+# Variabel global untuk menyimpan instance reminder
+auto_reminder = None
+
+async def start_auto_reminder(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Mulai reminder otomatis harian"""
+    global auto_reminder
+    user_id = update.effective_user.id
+    
+    if user_id not in ADMIN_IDS:
+        await update.message.reply_text("❌ Hanya admin yang bisa menggunakan perintah ini.")
+        return
+
+    if not context.args or len(context.args) < 2:
+        await update.message.reply_text(
+            "❌ **Format salah!**\n\n"
+            "Gunakan: `/start_reminder <course_id> <group_chat_id>`\n\n"
+            "Contoh: `/start_reminder 123456789 -1001234567890`\n\n"
+            "💡 **Cara dapatkan:**\n"
+            "• Course ID: dari URL Classroom\n"
+            "• Group Chat ID: gunakan /myinfo di grup\n\n"
+            "**Fitur:**\n"
+            "• Bot akan cek otomatis setiap hari\n"
+            "• Kirim reminder jam 08:00 & 18:00\n"
+            "• Untuk semua tugas aktif\n"
+            "• Hanya siswa yang belum mengumpulkan",
+            parse_mode='Markdown'
+        )
+        return
+
+    course_id = context.args[0]
+    group_chat_id = context.args[1]
+
+    try:
+        bot = AttendanceBot()
+        
+        if auto_reminder is None:
+            auto_reminder = ClassroomAutoReminder(bot)
+        
+        result = auto_reminder.start_daily_reminders(context, course_id, group_chat_id)
+        await update.message.reply_text(result)
+        
+    except Exception as e:
+        logger.error(f"Error starting auto reminder: {e}")
+        await update.message.reply_text(f"❌ Error: {str(e)}")
+
+async def stop_auto_reminder(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Hentikan reminder otomatis"""
+    global auto_reminder
+    user_id = update.effective_user.id
+    
+    if user_id not in ADMIN_IDS:
+        await update.message.reply_text("❌ Hanya admin yang bisa menggunakan perintah ini.")
+        return
+
+    if auto_reminder:
+        result = auto_reminder.stop_reminders()
+        auto_reminder = None
+        await update.message.reply_text(result)
+    else:
+        await update.message.reply_text("❌ Tidak ada reminder yang berjalan")
+
+async def test_auto_reminder(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Test reminder otomatis (langsung jalankan sekarang)"""
+    global auto_reminder
+    user_id = update.effective_user.id
+    
+    if user_id not in ADMIN_IDS:
+        await update.message.reply_text("❌ Hanya admin yang bisa menggunakan perintah ini.")
+        return
+
+    if not context.args or len(context.args) < 2:
+        await update.message.reply_text(
+            "❌ **Format salah!**\n\n"
+            "Gunakan: `/test_reminder <course_id> <group_chat_id>`\n\n"
+            "Contoh: `/test_reminder 123456789 -1001234567890`",
+            parse_mode='Markdown'
+        )
+        return
+
+    course_id = context.args[0]
+    group_chat_id = context.args[1]
+
+    try:
+        bot = AttendanceBot()
+        
+        if auto_reminder is None:
+            auto_reminder = ClassroomAutoReminder(bot)
+        
+        # Jalankan langsung sekarang (tanpa jadwal)
+        auto_reminder.check_and_send_reminders(context, course_id, group_chat_id)
+        await update.message.reply_text("✅ Test reminder telah dijalankan! Cek grup untuk melihat hasilnya.")
+        
+    except Exception as e:
+        logger.error(f"Error testing auto reminder: {e}")
+        await update.message.reply_text(f"❌ Error: {str(e)}")
+
+async def classroom_reminder_now(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Kirim reminder manual untuk tugas tertentu (versi update)"""
+    user_id = update.effective_user.id
+    
+    if user_id not in ADMIN_IDS:
+        await update.message.reply_text("❌ Hanya admin yang bisa menggunakan perintah ini.")
+        return
+
+    if not context.args or len(context.args) < 3:
+        await update.message.reply_text(
+            "❌ **Format salah!**\n\n"
+            "Gunakan: `/classroom_reminder <course_id> <coursework_id> <group_chat_id>`\n\n"
+            "Contoh: `/classroom_reminder 123456789 987654321 -1001234567890`\n\n"
+            "💡 **Cara dapatkan ID:**\n"
+            "• Course ID & Coursework ID: dari URL Classroom\n"
+            "• Group Chat ID: gunakan /myinfo di grup",
+            parse_mode='Markdown'
+        )
+        return
+
+    course_id = context.args[0]
+    coursework_id = context.args[1]
+    group_chat_id = context.args[2]
+
+    await update.message.reply_text("🔄 Memeriksa tugas Classroom...")
+
+    try:
+        bot = AttendanceBot()
+        auto_reminder_temp = ClassroomAutoReminder(bot)
+        
+        # Dapatkan detail tugas
+        assignment = bot.classroom_service.courses().courseWork().get(
+            courseId=course_id,
+            courseWorkId=coursework_id
+        ).execute()
+        
+        students_without_submission, message = auto_reminder_temp.get_students_without_submission_for_coursework(
+            course_id, coursework_id
+        )
+        
+        if students_without_submission:
+            reminder_message = auto_reminder_temp.format_reminder_message(
+                assignment, students_without_submission, course_id
+            )
+            # Kirim ke grup
+            context.bot.send_message(
+                chat_id=group_chat_id,
+                text=reminder_message,
+                parse_mode='Markdown'
+            )
+            await update.message.reply_text(f"✅ Reminder telah dikirim ke grup!\n\n{message}")
+        else:
+            await update.message.reply_text("✅ Semua siswa sudah mengumpulkan tugas!")
+
+    except Exception as e:
+        logger.error(f"Error in classroom reminder: {e}")
         await update.message.reply_text(f"❌ Error: {str(e)}")
