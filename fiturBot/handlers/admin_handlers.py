@@ -39,8 +39,7 @@ async def admin_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
         total_students = len(df)
         total_alpha = df['Total Alpha'].sum()
         total_izin = df['Total Izin'].sum()
-        
-        # Hitung murid dalam status warning
+    None       # Hitung murid dalam status warning
         warning_students = df[(df['Total Izin'] >= 2) & (df['Total Alpha'] >= 1)]
         
         stats_message = (
@@ -268,36 +267,33 @@ async def admin_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def test_classroom(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Test koneksi Google Classroom"""
     try:
-        from fiturBot.attendance_bot import AttendanceBot
         bot = AttendanceBot()
+        classroom_service = bot.initialize_classroom_service()
         
-        if bot.classroom_manager is None:
-            await update.message.reply_text("❌ Google Classroom tidak tersedia")
+        if not classroom_service:
+            await update.message.reply_text("❌ Gagal menginisialisasi Google Classroom service")
             return
+            
+        # Test dengan mengambil daftar courses
+        results = classroom_service.courses().list().execute()
+        courses = results.get('courses', [])
         
-        await update.message.reply_text("🔍 Checking Google Classroom...")
-        
-        unsubmitted = bot.classroom_manager.get_unsubmitted_assignments()
-        
-        if not unsubmitted:
-            message = "✅ **SEMUA TUGAS SUDAH DIKUMPULKAN!** 🎉"
+        if not courses:
+            await update.message.reply_text("✅ Connected to Google Classroom, but no courses found")
         else:
-            message = "📚 **SISWA YANG BELUM KUMPUL TUGAS:**\n\n"
-            for student, assignments in unsubmitted.items():
-                message += f"👤 **{student}**\n"
-                for assignment in assignments:
-                    message += f"   • {assignment}\n"
-                message += "\n"
-            message += f"📊 Total: {len(unsubmitted)} siswa"
-        
-        await update.message.reply_text(message, parse_mode='Markdown')
-        
+            course_list = []
+            for course in courses:
+                course_list.append(f"• {course['name']} (ID: {course['id']})")
+            
+            await update.message.reply_text(
+                f"✅ **Google Classroom Connection Successful!**\n\n"
+                f"📚 **Courses found:** {len(courses)}\n\n"
+                f"{chr(10).join(course_list)}",
+                parse_mode='Markdown'
+            )
+            
     except Exception as e:
-        await update.message.reply_text(f"❌ Error: {str(e)}")
-
-
-# Variabel global untuk menyimpan instance reminder
-auto_reminder = None
+        await update.message.reply_text(f"❌ Error connecting to Google Classroom: {e}")
 
 async def start_auto_reminder(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Mulai reminder otomatis harian"""
@@ -393,7 +389,7 @@ async def test_auto_reminder(update: Update, context: ContextTypes.DEFAULT_TYPE)
         await update.message.reply_text(f"❌ Error: {str(e)}")
 
 async def classroom_reminder_now(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Kirim reminder manual untuk tugas tertentu (versi update)"""
+    """Kirim reminder manual untuk tugas tertentu"""
     user_id = update.effective_user.id
     
     if user_id not in ADMIN_IDS:
@@ -420,10 +416,18 @@ async def classroom_reminder_now(update: Update, context: ContextTypes.DEFAULT_T
 
     try:
         bot = AttendanceBot()
+        
+        # Inisialisasi classroom service
+        classroom_service = bot.initialize_classroom_service()
+        if not classroom_service:
+            await update.message.reply_text("❌ Gagal menginisialisasi Google Classroom service")
+            return
+        
+        # Buat instance reminder temporary
         auto_reminder_temp = ClassroomAutoReminder(bot)
         
         # Dapatkan detail tugas
-        assignment = bot.classroom_service.courses().courseWork().get(
+        assignment = classroom_service.courses().courseWork().get(
             courseId=course_id,
             courseWorkId=coursework_id
         ).execute()
@@ -437,7 +441,7 @@ async def classroom_reminder_now(update: Update, context: ContextTypes.DEFAULT_T
                 assignment, students_without_submission, course_id
             )
             # Kirim ke grup
-            context.bot.send_message(
+            await context.bot.send_message(
                 chat_id=group_chat_id,
                 text=reminder_message,
                 parse_mode='Markdown'
@@ -449,4 +453,3 @@ async def classroom_reminder_now(update: Update, context: ContextTypes.DEFAULT_T
     except Exception as e:
         logger.error(f"Error in classroom reminder: {e}")
         await update.message.reply_text(f"❌ Error: {str(e)}")
-
