@@ -391,36 +391,50 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Jika belum terdaftar
     if context.args:
         nama = ' '.join(context.args)
+        email = context.args[-1] if '@' in context.args[-1] else ''  # Ambil email jika ada
 
         # Validasi nama
         if len(nama) < 2:
             await update.message.reply_text("❌ Nama terlalu pendek. Minimal 2 karakter.")
             return
         
+        # Jika ada email, hapus dari nama
+        if email:
+            nama = ' '.join(context.args[:-1])
+        
         # Tambahkan ke spreadsheet
         try:
-            new_row = [nama, user.id, f"@{user.username}" if user.username else "-", 0, 0, "Belum Absen", "Auto-registered"]
+            new_row = [nama, user.id, f"@{user.username}" if user.username else "-", email, 0, 0, "Belum Absen", "Auto-registered"]
             bot.worksheet.append_row(new_row)
             
-            await update.message.reply_text(
+            confirmation_msg = (
                 f"✅ **Pendaftaran Berhasil!**\n\n"
                 f"• Nama: {nama}\n"
                 f"• User ID: `{user.id}`\n"
-                f"• Username: @{user.username or 'Tidak ada'}\n\n"
-                f"Sekarang Anda bisa menggunakan /absen",
-                parse_mode='Markdown'
+                f"• Username: @{user.username or 'Tidak ada'}\n"
             )
+
+            if email:
+                confirmation_msg += f"• Email: {email}\n\n"
+                confirmation_msg += "📧 Email telah tercatat untuk reminder tugas Classroom"
+            else:
+                confirmation_msg += "\n💡 **Tips:** Tambahkan email dengan `/register Nama email@example.com` untuk reminder tugas"
+            
+            confirmation_msg += f"\n\nSekarang Anda bisa menggunakan /absen"
+            
+            await update.message.reply_text(confirmation_msg, parse_mode='Markdown')
+
         except Exception as e:
             await update.message.reply_text(f"❌ Error: {e}")
     else:
         await update.message.reply_text(
             "📝 **Form Pendaftaran**\n\n"
             "Untuk mendaftar, ketik:\n"
-            "`/register Nama Lengkap`\n\n"
-            "Contoh: `/register Andi Wijaya`",
+            "`/register NamaLengkap email@gmail.com`\n\n"
+            "Contoh: `/register Andi Wijaya andi@gmail.com`",
             parse_mode='Markdown'
-
         )
+
 
 
 
