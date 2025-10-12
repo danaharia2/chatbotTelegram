@@ -39,8 +39,8 @@ async def admin_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
         total_students = len(df)
         total_alpha = df['Total Alpha'].sum()
         total_izin = df['Total Izin'].sum()
-    None       # Hitung murid dalam status warning
-        warning_students = df[(df['Total Izin'] >= 2) & (df['Total Alpha'] >= 1)]
+        # Hitung murid dalam status warning
+        warning_students = df[(df['Total Izin'] >= 2) | (df['Total Alpha'] >= 2)]
         
         stats_message = (
             "📊 **STATISTIK ADMIN**\n\n"
@@ -453,3 +453,4 @@ async def classroom_reminder_now(update: Update, context: ContextTypes.DEFAULT_T
     except Exception as e:
         logger.error(f"Error in classroom reminder: {e}")
         await update.message.reply_text(f"❌ Error: {str(e)}")
+
