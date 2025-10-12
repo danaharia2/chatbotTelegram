@@ -224,7 +224,11 @@ class ClassroomAutoReminder:
     def get_all_coursework(self, course_id):
         """Ambil semua tugas dari course tertentu"""
         try:
-            coursework = self.bot.classroom_service.courses().courseWork().list(
+            classroom_service = self.bot.initialize_classroom_service()
+            if not classroom_service:
+                return []
+                
+            coursework = classroom_service.courses().courseWork().list(
                 courseId=course_id
             ).execute()
             
@@ -256,7 +260,11 @@ class ClassroomAutoReminder:
                 return [], "Tidak ada email siswa terdaftar"
             
             # Dapatkan submission
-            submissions = self.bot.classroom_service.courses().courseWork().studentSubmissions().list(
+            classroom_service = self.bot.initialize_classroom_service()
+            if not classroom_service:
+                return [], "Gagal menginisialisasi Classroom service"
+                
+            submissions = classroom_service.courses().courseWork().studentSubmissions().list(
                 courseId=course_id,
                 courseWorkId=coursework_id
             ).execute()
@@ -265,7 +273,7 @@ class ClassroomAutoReminder:
             if submissions.get('studentSubmissions'):
                 for submission in submissions['studentSubmissions']:
                     if submission['state'] == 'TURNED_IN' or submission['state'] == 'RETURNED':
-                        student_profile = self.bot.classroom_service.userProfiles().get(
+                        student_profile = classroom_service.userProfiles().get(
                             userId=submission['userId']
                         ).execute()
                         student_email = student_profile.get('emailAddress', '')
@@ -406,4 +414,5 @@ class ClassroomAutoReminder:
         if self.reminder_thread:
             self.reminder_thread.join(timeout=5)
         return "❌ Reminder otomatis dihentikan"
+
 
