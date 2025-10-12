@@ -451,7 +451,7 @@ class ClassroomAutoReminder:
         self.running = False
         if self.reminder_thread:
             self.reminder_thread.join(timeout=5)
-        return "❌ Reminder otomatis dihentikan"            
+            return "❌ Reminder otomatis dihentikan"            
             logger.info("✅ Berhasil terhubung ke Google Sheets!")
             
         except Exception as e:
@@ -845,6 +845,7 @@ class ClassroomAutoReminder:
         if self.reminder_thread:
             self.reminder_thread.join(timeout=5)
         return "❌ Reminder otomatis dihentikan"
+
 
 
 
