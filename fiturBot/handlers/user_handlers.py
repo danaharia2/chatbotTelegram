@@ -33,6 +33,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "/export_data - Export data ke CSV\n"
             "/manual_kick - Keluarkan murid manual\n"
             "/list_warnings - Lihat daftar peringatan\n"
+            "/start_reminder `NzgxOTM4ODI5NTEz -1002408972369` - Memulai reminder classroom otomatis\n"
+            "/stop_reminder - Memberhentikan reminder classroom otomatis\n"
+            "/start_reminder `NzgxOTM4ODI5NTEz -1002408972369` - Mengetes reminder classroom otomatis\n"
             "/classroom_reminder - Kirim reminder tugas\n"
             "/class_reminder - Kirim reminder kelas\n"
             "/check_topics - Cek informasi topik grup\n"
@@ -418,6 +421,7 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
             parse_mode='Markdown'
 
         )
+
 
 
 
