@@ -295,6 +295,7 @@ async def test_classroom(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         await update.message.reply_text(f"❌ Error connecting to Google Classroom: {e}")
 
+auto_reminder = None
 async def start_auto_reminder(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Mulai reminder otomatis harian"""
     global auto_reminder
@@ -453,4 +454,5 @@ async def classroom_reminder_now(update: Update, context: ContextTypes.DEFAULT_T
     except Exception as e:
         logger.error(f"Error in classroom reminder: {e}")
         await update.message.reply_text(f"❌ Error: {str(e)}")
+
 
