@@ -3,6 +3,7 @@ import logging
 import random
 import json
 import os
+import asyncio
 from datetime import datetime
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes, CallbackQueryHandler, CommandHandler, MessageHandler, filters
@@ -68,8 +69,8 @@ class QuizManager:
         """Get quiz by ID"""
         return self.quizzes.get(quiz_id)
     
-    def start_quiz(self, quiz_id, chat_id):
-        """Start a quiz in a chat"""
+    def start_quiz(self, quiz_id, chat_id, context, auto_next_min=10):
+        """Start a quiz in a chat dengan auto-next"""
         if quiz_id not in self.quizzes:
             return False
         
@@ -78,9 +79,38 @@ class QuizManager:
             'current_question': 0,
             'participants': {},
             'start_time': datetime.now().isoformat(),
-            'message_id': None
+            'message_id': None,
+            'answered_users': set(),  # Track users who answered current question
+            'auto_next_min': auto_next_min,  # Minimum users untuk auto-next
+            'auto_next_task': None  # Untuk menyimpan task auto-next
         }
         return True
+    
+    async def start_auto_next_timer(self, chat_id, context, delay=60):
+        """Start timer untuk auto-next setelah delay tertentu"""
+        if chat_id not in self.active_quizzes:
+            return
+        
+        try:
+            await asyncio.sleep(delay)
+            
+            # Cek apakah masih active dan belum mencapai minimum
+            if (chat_id in self.active_quizzes and 
+                len(self.active_quizzes[chat_id]['answered_users']) < self.active_quizzes[chat_id]['auto_next_min']):
+                
+                active_quiz = self.active_quizzes[chat_id]
+                current_answers = len(active_quiz['answered_users'])
+                required = active_quiz['auto_next_min']
+                
+                await context.bot.send_message(
+                    chat_id=chat_id,
+                    text=f"⏰ **Waktu habis!** Hanya {current_answers} peserta yang menjawab (dibutuhkan {required}). Melanjutkan ke soal berikutnya..."
+                )
+                
+                await self.next_question_auto(context, chat_id)
+                
+        except Exception as e:
+            logger.error(f"Error in auto-next timer: {e}")
     
     def get_current_question(self, chat_id):
         """Get current question for active quiz"""
@@ -96,8 +126,8 @@ class QuizManager:
         
         return self.quizzes[quiz_id]['questions'][current_q]
     
-    def submit_answer(self, chat_id, user_id, username, answer_index):
-        """Submit answer for current question"""
+    async def submit_answer(self, chat_id, user_id, username, answer_index, context):
+        """Submit answer for current question dengan auto-next check"""
         if chat_id not in self.active_quizzes:
             return False, "No active quiz"
         
@@ -126,6 +156,10 @@ class QuizManager:
                 'answers': []
             }
         
+        # Cek jika user sudah menjawab soal ini
+        if user_id in active_quiz['answered_users']:
+            return False, "Anda sudah menjawab soal ini"
+        
         active_quiz['participants'][str(user_id)]['answers'].append({
             'question_index': active_quiz['current_question'],
             'answer': answer_index,
@@ -136,24 +170,50 @@ class QuizManager:
         if is_correct:
             active_quiz['participants'][str(user_id)]['score'] += 1
         
+        # Tambahkan user ke set yang sudah menjawab
+        active_quiz['answered_users'].add(user_id)
+        
+        # Cek apakah sudah mencapai minimum untuk auto-next
+        current_answers = len(active_quiz['answered_users'])
+        required = active_quiz['auto_next_min']
+        
+        if current_answers >= required:
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text=f"🎉 **{current_answers} peserta sudah menjawab!** Melanjutkan ke soal berikutnya..."
+            )
+            await self.next_question_auto(context, chat_id)
+        
         return True, is_correct
     
-    def next_question(self, chat_id):
-        """Move to next question"""
+    async def next_question_auto(self, context, chat_id):
+        """Move to next question automatically"""
         if chat_id not in self.active_quizzes:
             return False
         
         active_quiz = self.active_quizzes[chat_id]
         active_quiz['current_question'] += 1
+        active_quiz['answered_users'] = set()  # Reset untuk soal baru
         
         # Check if quiz finished
         if active_quiz['current_question'] >= len(self.quizzes[active_quiz['quiz_id']]['questions']):
-            return self.finish_quiz(chat_id)
+            return await self.finish_quiz_auto(context, chat_id)
+        
+        # Send next question
+        question = self.get_current_question(chat_id)
+        quiz_data = self.quizzes[active_quiz['quiz_id']]
+        current_q = active_quiz['current_question']
+        total_q = quiz_data['total_questions']
+        
+        await self.send_question(context, chat_id, question, current_q + 1, total_q)
+        
+        # Start auto-next timer untuk soal ini
+        asyncio.create_task(self.start_auto_next_timer(chat_id, context, 60))  # 60 detik
         
         return True
     
-    def finish_quiz(self, chat_id):
-        """Finish the quiz and calculate results"""
+    async def finish_quiz_auto(self, context, chat_id):
+        """Finish the quiz automatically"""
         if chat_id not in self.active_quizzes:
             return None
         
@@ -192,17 +252,53 @@ class QuizManager:
         # Remove active quiz
         del self.active_quizzes[chat_id]
         
+        await self.show_quiz_results(context, chat_id, results)
         return results
-    
-    def get_leaderboard(self, limit=10):
-        """Get global leaderboard"""
-        sorted_scores = sorted(
-            self.user_scores.items(),
-            key=lambda x: x[1]['total_score'],
-            reverse=True
-        )[:limit]
+
+    async def send_question(self, context, chat_id, question, current_q, total_q):
+        """Send question dengan progress tracking"""
+        keyboard = []
+        for i, option in enumerate(question['options']):
+            keyboard.append([InlineKeyboardButton(
+                f"{i+1}. {option}", 
+                callback_data=f"quiz_answer_{i}"
+            )])
         
-        return sorted_scores
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        # Tambah info auto-next
+        auto_next_info = f"\n\n🔢 **Auto-next:** {self.active_quizzes[chat_id]['auto_next_min']} peserta atau 60 detik"
+        
+        message = await context.bot.send_message(
+            chat_id=chat_id,
+            text=f"❓ **PERTANYAAN {current_q}/{total_q}**\n\n{question['question']}{auto_next_info}",
+            reply_markup=reply_markup,
+            parse_mode='Markdown'
+        )
+        
+        # Store message ID
+        if chat_id in self.active_quizzes:
+            self.active_quizzes[chat_id]['message_id'] = message.message_id
+
+    async def show_quiz_results(self, context, chat_id, results):
+        """Show quiz results"""
+        results_text = f"🏆 **HASIL QUIZ: {results['quiz_title']}** 🏆\n\n"
+        results_text += f"📊 **Total Pertanyaan:** {results['total_questions']}\n"
+        results_text += f"👥 **Total Peserta:** {len(results['participants'])}\n\n"
+        
+        if not results['participants']:
+            results_text += "❌ Tidak ada peserta yang mengikuti quiz."
+        else:
+            results_text += "**🏅 PERINGKAT:**\n\n"
+            for i, (user_id, data) in enumerate(results['participants'][:10], 1):
+                medal = "🥇" if i == 1 else "🥈" if i == 2 else "🥉" if i == 3 else f"{i}."
+                results_text += f"{medal} **{data['username']}** - {data['score']}/{results['total_questions']}\n"
+        
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text=results_text,
+            parse_mode='Markdown'
+        )
 
 # Global quiz manager instance
 quiz_manager = QuizManager()
@@ -221,77 +317,189 @@ async def quiz_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
 **Untuk Admin:**
 • `/create_quiz` - Buat quiz baru (interaktif)
 • `/list_quizzes` - Daftar semua quiz
-• `/start_quiz <quiz_id>` - Mulai quiz
-• `/next_question` - Pertanyaan berikutnya
+• `/start_quiz <quiz_id>` - Mulai quiz dengan auto-next
+• `/start_quiz_manual <quiz_id>` - Mulai quiz manual (tanpa auto-next)
+• `/next_question` - Pertanyaan berikutnya (manual mode)
 • `/finish_quiz` - Akhiri quiz
 
-**📝 Cara Membuat & Memulai Quiz:**
+**🔥 FITUR AUTO-NEXT:**
+• Quiz otomatis lanjut setelah 10 peserta menjawab
+• Atau setelah 60 detik jika belum mencapai 10 peserta
+• Tidak perlu perintah `/next_question`
 
-1. **Buat Quiz**: `/create_quiz` (ikuti instruksi)
-2. **Dapatkan ID**: Setelah selesai, bot kasih ID quiz
-3. **Start Quiz**: `/start_quiz ID_QUIZ`
-   Contoh: `/start_quiz quiz_20241012_123456`
-
-4. **Peserta Jawab**: Klik tombol jawaban di pesan quiz
-5. **Next Question**: Admin gunakan `/next_question`
-6. **Finish**: `/finish_quiz` untuk lihat hasil
-
-**🆔 Contoh ID Quiz**: `quiz_20241012_143022`
+**📝 Cara Pakai:**
+1. Buat quiz: `/create_quiz`
+2. Mulai quiz: `/start_quiz ID_QUIZ`
+3. Peserta jawab dengan klik tombol
+4. Otomatis lanjut ke soal berikutnya!
 """
     await update.message.reply_text(help_text, parse_mode='Markdown')
 
-async def create_quiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Start quiz creation process"""
+async def start_quiz_auto(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Start quiz dengan auto-next"""
+    await start_quiz(update, context, auto_next=True)
+
+async def start_quiz_manual(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Start quiz tanpa auto-next (manual control)"""
+    await start_quiz(update, context, auto_next=False)
+
+async def start_quiz(update: Update, context: ContextTypes.DEFAULT_TYPE, auto_next=True):
+    """Start a quiz dengan opsi auto-next"""
     user_id = update.effective_user.id
     
     if user_id not in ADMIN_IDS:
-        await update.message.reply_text("❌ Hanya admin yang bisa membuat quiz.")
+        await update.message.reply_text("❌ Hanya admin yang bisa memulai quiz.")
         return
     
-    # Initialize quiz creation process
-    context.user_data['quiz_creation'] = {
-        'step': 'title',
-        'questions': [],
-        'title': None
-    }
+    if not context.args:
+        await update.message.reply_text(
+            "❌ **Format salah!**\n\n"
+            "**Cara yang benar:**\n"
+            "`/start_quiz ID_QUIZ`\n\n"
+            "**Contoh:**\n"
+            "`/start_quiz quiz_20241012_143022`\n\n"
+            "Lihat daftar quiz dengan `/list_quizzes`",
+            parse_mode='Markdown'
+        )
+        return
     
-    await update.message.reply_text(
-        "🎯 **Membuat Quiz Baru**\n\n"
-        "Silakan kirim judul untuk quiz ini:"
-    )
+    quiz_id = context.args[0]
+    
+    # Check if quiz exists
+    quiz = quiz_manager.get_quiz(quiz_id)
+    if not quiz:
+        await update.message.reply_text(
+            f"❌ Quiz dengan ID `{quiz_id}` tidak ditemukan.\n\n"
+            "Gunakan `/list_quizzes` untuk melihat daftar quiz yang tersedia.",
+            parse_mode='Markdown'
+        )
+        return
+    
+    # Tentukan chat_id: jika di private, gunakan GROUP_CHAT_ID
+    if update.effective_chat.type == 'private':
+        from config import GROUP_CHAT_ID
+        if not GROUP_CHAT_ID:
+            await update.message.reply_text("❌ GROUP_CHAT_ID tidak dikonfigurasi.")
+            return
+        chat_id = GROUP_CHAT_ID
+        start_location = "grup"
+    else:
+        chat_id = update.effective_chat.id
+        start_location = "grup ini"
+    
+    # Start the quiz
+    if auto_next:
+        success = quiz_manager.start_quiz(quiz_id, chat_id, context, auto_next_min=10)
+        mode_text = "dengan **AUTO-NEXT** (10 peserta atau 60 detik)"
+    else:
+        success = quiz_manager.start_quiz(quiz_id, chat_id, context, auto_next_min=999)  # Angka besar = manual
+        mode_text = "dengan **MANUAL CONTROL**"
+    
+    if success:
+        question = quiz_manager.get_current_question(chat_id)
+        if question:
+            quiz_data = quiz_manager.quizzes[quiz_id]
+            await quiz_manager.send_question(context, chat_id, question, 1, quiz_data['total_questions'])
+            
+            # Start auto-next timer jika mode auto
+            if auto_next:
+                asyncio.create_task(quiz_manager.start_auto_next_timer(chat_id, context, 60))
+            
+            await update.message.reply_text(
+                f"✅ **Quiz dimulai di {start_location}!** {mode_text}\n\n"
+                f"📖 **Judul:** {quiz_data['title']}\n"
+                f"❓ **Jumlah Soal:** {quiz_data['total_questions']}\n"
+                f"👥 **Mode:** {'Auto-next setelah 10 jawaban' if auto_next else 'Manual control'}"
+            )
+        else:
+            await update.message.reply_text("❌ Quiz tidak memiliki pertanyaan.")
+    else:
+        await update.message.reply_text("❌ Gagal memulai quiz.")
 
-async def handle_quiz_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle quiz creation messages"""
-    user_id = update.effective_user.id
+# ... (fungsi-fungsi lainnya seperti create_quiz, list_quizzes, dll tetap sama)
+
+async def handle_quiz_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle quiz callback queries dengan auto-next"""
+    query = update.callback_query
+    await query.answer()
     
-    # Check if user is in quiz creation mode
-    if 'quiz_creation' not in context.user_data:
-        return
+    data = query.data
+    user_id = query.from_user.id
+    username = query.from_user.first_name
+    chat_id = query.message.chat_id
     
-    creation_data = context.user_data['quiz_creation']
-    step = creation_data['step']
-    text = update.message.text
-    
-    logger.info(f"Quiz creation - Step: {step}, User: {user_id}")
+    logger.info(f"Quiz callback - Data: {data}, User: {username}")
     
     try:
-        if step == 'title':
-            creation_data['title'] = text
-            creation_data['step'] = 'question'
-            await update.message.reply_text(
-                "✅ **Judul disimpan!**\n\n"
-                "Silakan kirim pertanyaan pertama:"
+        if data.startswith("quiz_answer_"):
+            answer_index = int(data.split("_")[2])
+            
+            success, result = await quiz_manager.submit_answer(
+                chat_id,
+                user_id,
+                username,
+                answer_index,
+                context
             )
+            
+            if success:
+                if result:
+                    # Jawaban benar
+                    await query.edit_message_text(
+                        text=query.message.text + f"\n\n✅ **{username} menjawab benar!** 🎉",
+                        parse_mode='Markdown'
+                    )
+                else:
+                    # Jawaban salah
+                    await query.edit_message_text(
+                        text=query.message.text + f"\n\n❌ **{username} menjawab salah!**",
+                        parse_mode='Markdown'
+                    )
+                
+                # Tampilkan progress jawaban
+                if chat_id in quiz_manager.active_quizzes:
+                    active_quiz = quiz_manager.active_quizzes[chat_id]
+                    current_answers = len(active_quiz['answered_users'])
+                    required = active_quiz['auto_next_min']
+                    
+                    if required < 999:  # Jika mode auto-next (bukan manual)
+                        progress_text = f"\n\n📊 **Progress:** {current_answers}/{required} peserta sudah menjawab"
+                        try:
+                            await query.edit_message_text(
+                                text=query.message.text + progress_text,
+                                parse_mode='Markdown',
+                                reply_markup=query.message.reply_markup
+                            )
+                        except:
+                            pass  # Jika message sudah di-edit, skip
+                            
+            else:
+                if result == "Anda sudah menjawab soal ini":
+                    await query.answer("⚠️ Anda sudah menjawab soal ini!", show_alert=True)
+                else:
+                    await query.answer(f"⚠️ {result}", show_alert=True)
         
-        elif step == 'question':
-            creation_data['current_question'] = {
-                'question': text,
-                'options': [],
-                'correct_answer': None
-            }
-            creation_data['step'] = 'option_1'
-            await update.message.reply_text(
-                "✅ **Pertanyaan disimpan!**\n\n"
+        elif data.startswith("quiz_correct_"):
+            # Handle correct answer selection selama pembuatan quiz
+            correct_answer = int(data.split("_")[2])
+            
+            if 'quiz_creation' in context.user_data:
+                creation_data = context.user_data['quiz_creation']
+                creation_data['current_question']['correct_answer'] = correct_answer
+                creation_data['questions'].append(creation_data['current_question'])
+                creation_data['step'] = 'add_more'
+                
+                await query.edit_message_text(
+                    text=query.message.text + f"\n\n✅ **Jawaban benar disimpan: Opsi {correct_answer + 1}**",
+                    parse_mode='Markdown'
+                )
+                
+                await context.bot.send_message(
+                    chat_id=query.message.chat_id,
+                    text="✅ **Pertanyaan berhasil disimpan!**\n\n"
+                         "Mau tambah pertanyaan lagi?\n"
+                         "Ketik **`ya`** untuk tambah pertanyaan\n"
+                         "Ketik **`tidak✅ **Pertanyaan disimpan!**\n\n"
                 "Silakan kirim opsi jawaban **pertama**:"
             )
         
