@@ -243,7 +243,7 @@ async def admin_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "   • Course ID: dari URL `.../course/`**123456789**\n"
         "   • Coursework ID: dari URL tugas `.../view/`**987654321**\n"
         "4. **Gunakan perintah:**\n"
-        "   `/classroom_reminder NzgxOTM4ODI5NTEz 987654321`\n\n"
+        "   `/classroom_reminder NzgxOTM4ODI5NTEz <coursework_id> -1002408972369`\n\n"
         "• `/class_reminder` - Kirim reminder kelas sekarang\n\n"
         
         "⚙️ SISTEM & INFO:\n"
@@ -449,3 +449,4 @@ async def classroom_reminder_now(update: Update, context: ContextTypes.DEFAULT_T
     except Exception as e:
         logger.error(f"Error in classroom reminder: {e}")
         await update.message.reply_text(f"❌ Error: {str(e)}")
+
