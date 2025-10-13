@@ -101,21 +101,21 @@ class AttendanceBot:
                     current_alpha = int(row['Total Alpha']) if pd.notna(row['Total Alpha']) else 0
                     current_izin = int(row['Total Izin']) if pd.notna(row['Total Izin']) else 0
 
-                if status == 'Hadir':
-                    new_hadir = current_hadir + 1
-                    self.worksheet.update_cell(idx + 2, 5, new_hadir)
-                    self.worksheet.update_cell(idx + 2, 8, 'Hadir')
-                    logger.info(f"✅ Updated Hadir for {row['Nama']}: {current_hadir} → {new_hadir}")
-                elif status == 'Alpha':
-                    new_alpha = current_alpha + 1
-                    self.worksheet.update_cell(idx + 2, 6, new_alpha)
-                    self.worksheet.update_cell(idx + 2, 8, 'Alpha')
-                    logger.info(f"✅ Updated Alpha for {row['Nama']}: {current_alpha} → {new_alpha}")
-                elif status == 'Izin':
-                    new_izin = current_izin + 1
-                    self.worksheet.update_cell(idx + 2, 7, new_izin)
-                    self.worksheet.update_cell(idx + 2, 8, 'Izin')
-                    logger.info(f"✅ Updated Izin for {row['Nama']}: {current_izin} → {new_izin}")
+                    if status == 'Hadir':
+                        new_hadir = current_hadir + 1
+                        self.worksheet.update_cell(idx + 2, 5, new_hadir)
+                        self.worksheet.update_cell(idx + 2, 8, 'Hadir')
+                        logger.info(f"✅ Updated Hadir for {row['Nama']}: {current_hadir} → {new_hadir}")
+                    elif status == 'Alpha':
+                        new_alpha = current_alpha + 1
+                        self.worksheet.update_cell(idx + 2, 6, new_alpha)
+                        self.worksheet.update_cell(idx + 2, 8, 'Alpha')
+                        logger.info(f"✅ Updated Alpha for {row['Nama']}: {current_alpha} → {new_alpha}")
+                    elif status == 'Izin':
+                        new_izin = current_izin + 1
+                        self.worksheet.update_cell(idx + 2, 7, new_izin)
+                        self.worksheet.update_cell(idx + 2, 8, 'Izin')
+                        logger.info(f"✅ Updated Izin for {row['Nama']}: {current_izin} → {new_izin}")
 
                 logger.info(f"✅ Updated record for {row['Nama']}: {status}")
                 return True
@@ -126,23 +126,6 @@ class AttendanceBot:
         except Exception as e:
             logger.error(f"Error updating student record: {e}")
             return False
-    
-    def get_student_data_with_retry(self, max_retries=3):
-        """Get student data dengan retry mechanism"""
-        for attempt in range(max_retries):
-            try:
-                df = self.get_student_data()
-                if not df.empty:
-                    return df
-                logger.warning(f"Empty dataframe, retry {attempt + 1}/{max_retries}")
-
-            except Exception as e:
-                logger.warning(f"Attempt {attempt + 1} failed: {e}")
-
-        import pandas as pd
-        return pd.DataFrame()
-        import pandas as pd
-        return pd.DataFrame()
     
     def check_auto_kick_conditions(self):
         """Memeriksa kondisi untuk mengeluarkan murid secara otomatis"""
@@ -237,7 +220,7 @@ class AttendanceBot:
                     student_profile = classroom_service.userProfiles().get(
                         userId=submission['userId']
                     ).execute()
-                    student_eFalse = student_profile.get('emailAddress', '')
+                    student_email = student_profile.get('emailAddress', '')
                     if student_email:
                         submitted_emails.append(student_email.lower())
         
@@ -859,6 +842,7 @@ class ClassroomAutoReminder:
         if self.reminder_thread:
             self.reminder_thread.join(timeout=5)
         return "❌ Reminder otomatis dihentikan"
+
 
 
 
