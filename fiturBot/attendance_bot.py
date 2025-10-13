@@ -119,14 +119,9 @@ class AttendanceBot:
                         worksheet.update_cell(idx, 8, 'Alpha')
 
                     elif status == 'Izin':
-                        nIzined(f"✅ Updated Izin for {row['Nama']}: {current_izin} → {new_izin}")
+                        worksheet.update_cell(idx, 7, total_izin + 1)   # Total Izin +1
+                        worksheet.update_cell(idx, 8, 'Izin')
 
-                    # Untuk status 'Hadir', hanya update status terakhir saja
-                    elif status == 'Hadir':
-                        # Hanya update Status Terakhir (teks), angka tetap
-                        self.worksheet.update_cell(idx + 2, 7, 'Hadir')    # Kolom F: Status Terakhir (teks)
-                        logger.info(f"✅ Updated status for {row['Nama']}: Hadir")
-                    
                     logger.info(f"✅ Updated record for {row['Nama']}: {status}")
                     return True
             
@@ -852,6 +847,7 @@ class ClassroomAutoReminder:
         if self.reminder_thread:
             self.reminder_thread.join(timeout=5)
         return "❌ Reminder otomatis dihentikan"
+
 
 
 
