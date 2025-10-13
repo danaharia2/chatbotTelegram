@@ -4,7 +4,7 @@ import logging
 from ..attendance_bot import AttendanceBot
 from config import ADMIN_IDS
 from datetime import datetime, timedelta
-from random
+import random
 
 logger = logging.getLogger(__name__)
 
@@ -501,6 +501,7 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Contoh: `/register Andi Wijaya andi@gmail.com`",
             parse_mode='Markdown'
         )
+
 
 
 
