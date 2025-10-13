@@ -311,7 +311,7 @@ async def absen(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not final_check.empty:
             final_student = final_check.iloc[0] if (status_absen == 'hadir' and final_student.get('Status Terakhir') == 'Hadir') or \
             (status_absen == 'izin' and final_student.get('Status Terakhir') == 'Izin') or \
-            (status_absen == 'alpha' and final_student.get('Status Terakhir') == 'Alpha'):
+            (status_absen == 'alpha' and final_student.get('Status Terakhir') == 'Alpha')
 
         await update.message.reply_text(
             f"✅ **Absensi berhasil!** (Terconfirmasi)\n"
@@ -559,6 +559,7 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Contoh: `/register Andi Wijaya andi@gmail.com`",
             parse_mode='Markdown'
         )
+
 
 
 
