@@ -164,7 +164,7 @@ async def absen(update: Update, context: ContextTypes.DEFAULT_TYPE):
     bot = AttendanceBot()
     
     # Cek apakah user sudah terdaftar
-    df = bot.get_student_data_with_retry()
+    df = bot.get_student_data()
     if df.empty:
             await update.message.reply_text(
                 "❌ **Sistem sedang sibuk, silakan coba lagi dalam beberapa detik.**"
@@ -256,12 +256,14 @@ async def absen(update: Update, context: ContextTypes.DEFAULT_TYPE):
             'izin': '⚠️', 
             'alpha': '❌'
         }
+
+        waktu_wib = get_wib_time().strftime('%d/%m/%Y %H:%M WIB')
         
         message = (
             f"{emoji[status_absen]} **ABSENSI BERHASIL DICATAT**\n\n"
             f"👤 **Nama:** {student_name}\n"
             f"📝 **Status:** {status_absen.capitalize()}\n"
-            f"🕐 **Waktu:** {update.message.date.strftime('%d/%m/%Y %H:%M')}\n\n"
+            f"🕐 **Waktu:** {waktu_wib}\n\n"
             f"📊 **Update Status:**\n"
             f"• Total Hadir: {total_hadir_updated}x\n"
             f"• Total Alpha: {total_alpha_updated}x\n"
@@ -272,7 +274,7 @@ async def absen(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
     elif success_2: 
         # Dapatkan data terbaru untuk konfirmasi
-        df_updated = bot.get_student_data_with_reply()
+        df_updated = bot.get_student_data()
         student_updated = df_updated[df_updated['Telegram ID'] == user_id].iloc[0]
 
         # Konversi ke integer untuk data terbaru
@@ -291,12 +293,13 @@ async def absen(update: Update, context: ContextTypes.DEFAULT_TYPE):
             'izin': '⚠️', 
             'alpha': '❌'
         }
+        waktu_wib = get_wib_time().strftime('%d/%m/%Y %H:%M WIB')
         
         message = (
             f"{emoji[status_absen]} **ABSENSI BERHASIL DICATAT**\n\n"
             f"👤 **Nama:** {student_name}\n"
             f"📝 **Status:** {status_absen.capitalize()}\n"
-            f"🕐 **Waktu:** {update.message.date.strftime('%d/%m/%Y %H:%M')}\n\n"
+            f"🕐 **Waktu:** {waktu_wib}\n\n"
             f"📊 **Update Status:**\n"
             f"• Total Hadir: {total_hadir_updated}x\n"
             f"• Total Alpha: {total_alpha_updated}x\n"
@@ -325,9 +328,11 @@ async def absen(update: Update, context: ContextTypes.DEFAULT_TYPE):
             (status_absen == 'izin' and final_student.get('Status Terakhir') == 'Izin') or \
             (status_absen == 'alpha' and final_student.get('Status Terakhir') == 'Alpha')
 
+        waktu_wib = get_wib_time().strftime('%d/%m/%Y %H:%M WIB')
         await update.message.reply_text(
             f"✅ **Absensi berhasil!** (Terconfirmasi)\n"
             f"Status: {status_absen.capitalize()}\n"
+            f"Waktu: {waktu_wib}\n"
             f"Data sudah tersimpan di sistem."
         )
         return
@@ -342,10 +347,19 @@ async def send_attendance_notification(context: ContextTypes.DEFAULT_TYPE, user_
     """Mengirim notifikasi kehadiran ke grup dengan pantun lucu"""
     # Dapatkan hari Senin minggu ini
     today = datetime.now()
-    senin_minggu_ini = today - timedelta(days=today.weekday())
-
-    # Format tanggal
-    tanggal_str = senin_minggu_ini.strftime("%A tanggal %d %B %Y")
+    senin_minggu_ini = get_monday_wib()
+ 
+    # Format tanggal 
+    bulan_indonesia = {
+        1: "Januari", 2: "Februari", 3: "Maret", 4: "April", 5: "Mei", 6: "Juni",
+        7: "Juli", 8: "Agustus", 9: "September", 10: "Oktober", 11: "November", 12: "Desember"
+    }
+    hari = "Senin"  # Karena kita selalu mau Senin
+    tanggal = senin_minggu_ini.day
+    bulan = bulan_indonesia[senin_minggu_ini.month]
+    tahun = senin_minggu_ini.year
+    
+    tanggal_str = f"{hari} tanggal {tanggal} {bulan} {tahun}"
     motivasi_list = [
         "Semangat terus belajarnya! 💪",
         "Langkah kecil setiap hari membawa hasil yang besar! 🌟",
@@ -371,15 +385,17 @@ async def send_attendance_notification(context: ContextTypes.DEFAULT_TYPE, user_
         f"Terima kasih telah hadir pada {tanggal_str}\n\n"
         f"**{motivasi}**\n\n"
         f"📈 **Total Kehadiran:** {total_hadir}x\n\n"
-        f"🎭 **Pantun Lucu:**\n{pantun}"
+        f"🎭 **Pantun Lucu:**\n{pantun}\n\n"
+        f"🕐 _Waktu sistem: {get_wib_time().strftime('%d/%m/%Y %H:%M WIB')}_"
     )
+    
     GROUP_CHAT_ID = -1002408972369
     try:
         await context.bot.send_message(
             chat_id=GROUP_CHAT_ID,
             text=notification_message
     )
-        logger.info(f"Notifikasi kehadiran terkirim untuk {student_name}")
+        logger.info(f"Notifikasi kehadiran terkirim untuk {student_name} pada {tanggal_str}")
     except Exception as e:
         logger.error(f"Gagal mengirim notifikasi ke grup: {e}")
 
@@ -571,6 +587,7 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Contoh: `/register Andi Wijaya andi@gmail.com`",
             parse_mode='Markdown'
         )
+
 
 
 
