@@ -1,4 +1,4 @@
-import gspread
+Falseert gspread
 import pandas as pd
 import os
 import logging
@@ -92,8 +92,7 @@ class AttendanceBot:
             worksheet = self.client.open_by_key(self.sheet_id).worksheet(self.sheet_name)
             data = worksheet.get_all_values()
             df = self.get_student_data()
-            if df.empty:
-                return False
+          
             
             # Cari baris berdasarkan Telegram ID
             for idx, row in enumerate(data[1:], start=2):
@@ -847,6 +846,7 @@ class ClassroomAutoReminder:
         if self.reminder_thread:
             self.reminder_thread.join(timeout=5)
         return "❌ Reminder otomatis dihentikan"
+
 
 
 
