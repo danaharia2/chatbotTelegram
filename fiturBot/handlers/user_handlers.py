@@ -282,15 +282,6 @@ async def absen(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         await update.message.reply_text(message)
     else:
-        import time
-        time.sleep(3)
-        df_final = bot.get_student_data_with_retry()
-        final_check = df_final[df_final['Telegram ID'] == user_id]
-        if not final_check.empty:
-            final_student = final_check.iloc[0] if (status_absen == 'hadir' and final_student.get('Status Terakhir') == 'Hadir') or \
-            (status_absen == 'izin' and final_student.get('Status Terakhir') == 'Izin') or \
-            (status_absen == 'alpha' and final_student.get('Status Terakhir') == 'Alpha')
-
         waktu_wib = get_wib_time().strftime('%d/%m/%Y %H:%M WIB')
         await update.message.reply_text(
             f"✅ **Absensi berhasil!** (Terconfirmasi)\n"
@@ -550,6 +541,7 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Contoh: `/register Andi Wijaya andi@gmail.com`",
             parse_mode='Markdown'
         )
+
 
 
 
