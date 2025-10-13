@@ -87,74 +87,74 @@ class AttendanceBot:
             return pd.DataFrame()
     
     def update_student_record(self, telegram_id, status):
-    """Update record kehadiran murid (simpan data angka)"""
-    try:
-        worksheet = self.client.open_by_key(self.sheet_id).worksheet(self.sheet_name)
-        data = worksheet.get_all_values()
+        """Update record kehadiran murid (simpan data angka)"""
+        try:
+            worksheet = self.client.open_by_key(self.sheet_id).worksheet(self.sheet_name)
+            data = worksheet.get_all_values()
         
-        logger.info(f"🔍 Mencari user dengan Telegram ID: {telegram_id}")
+            logger.info(f"🔍 Mencari user dengan Telegram ID: {telegram_id}")
         
-        # Cari baris berdasarkan Telegram ID (kolom B, index 1)
-        for idx, row in enumerate(data[1:], start=2):  # start=2 karena baris 1 header
-            if len(row) < 8:
-                continue
+            # Cari baris berdasarkan Telegram ID (kolom B, index 1)
+            for idx, row in enumerate(data[1:], start=2):  # start=2 karena baris 1 header
+                if len(row) < 8:
+                    continue
                 
-            # Kolom B (index 1) adalah Telegram ID
-            if row[1] == str(telegram_id):
-                student_name = row[2] if len(row) > 2 else "Unknown"
-                logger.info(f"📝 Found student: {student_name} at row {idx}")
+                # Kolom B (index 1) adalah Telegram ID
+                if row[1] == str(telegram_id):
+                    student_name = row[2] if len(row) > 2 else "Unknown"
+                    logger.info(f"📝 Found student: {student_name} at row {idx}")
                 
-                try: 
-                    # Konversi nilai ke integer dengan aman
-                    # Kolom E (index 4): Total Hadir
-                    # Kolom F (index 5): Total Alpha  
-                    # Kolom G (index 6): Total Izin
-                    total_hadir = int(row[4]) if row[4] and row[4].strip().isdigit() else 0
-                    total_alpha = int(row[5]) if row[5] and row[5].strip().isdigit() else 0
-                    total_izin = int(row[6]) if row[6] and row[6].strip().isdigit() else 0
+                    try: 
+                        # Konversi nilai ke integer dengan aman
+                        # Kolom E (index 4): Total Hadir
+                        # Kolom F (index 5): Total Alpha  
+                        # Kolom G (index 6): Total Izin
+                        total_hadir = int(row[4]) if row[4] and row[4].strip().isdigit() else 0
+                        total_alpha = int(row[5]) if row[5] and row[5].strip().isdigit() else 0
+                        total_izin = int(row[6]) if row[6] and row[6].strip().isdigit() else 0
                     
-                    logger.info(f"📊 Current totals - Hadir: {total_hadir}, Alpha: {total_alpha}, Izin: {total_izin}")
+                        logger.info(f"📊 Current totals - Hadir: {total_hadir}, Alpha: {total_alpha}, Izin: {total_izin}")
                     
-                except (ValueError, TypeError) as e:
-                    logger.error(f"❌ Error converting numbers for {student_name}: {e}")
-                    total_hadir = 0
-                    total_alpha = 0
-                    total_izin = 0
+                    except (ValueError, TypeError) as e:
+                        logger.error(f"❌ Error converting numbers for {student_name}: {e}")
+                        total_hadir = 0
+                        total_alpha = 0
+                        total_izin = 0
                 
-                try:
-                    # Update berdasarkan status
-                    if status == 'Hadir':
-                        worksheet.update_cell(idx, 5, total_hadir + 1)  # Kolom E: Total Hadir
-                        worksheet.update_cell(idx, 8, 'Hadir')           # Kolom H: Status Terakhir
-                        logger.info(f"✅ Updated {student_name}: Hadir ({total_hadir + 1}x)")
+                    try:
+                        #Update berdasarkan status
+                        if status == 'Hadir':
+                            worksheet.update_cell(idx, 5, total_hadir + 1)  # Kolom E: Total Hadir
+                            worksheet.update_cell(idx, 8, 'Hadir')           # Kolom H: Status Terakhir
+                            logger.info(f"✅ Updated {student_name}: Hadir ({total_hadir + 1}x)")
                         
-                    elif status == 'Alpha':
-                        worksheet.update_cell(idx, 6, total_alpha + 1)  # Kolom F: Total Alpha
-                        worksheet.update_cell(idx, 8, 'Alpha')
-                        logger.info(f"✅ Updated {student_name}: Alpha ({total_alpha + 1}x)")
+                        elif status == 'Alpha':
+                            worksheet.update_cell(idx, 6, total_alpha + 1)  # Kolom F: Total Alpha
+                            worksheet.update_cell(idx, 8, 'Alpha')
+                            logger.info(f"✅ Updated {student_name}: Alpha ({total_alpha + 1}x)")
                         
-                    elif status == 'Izin':
-                        worksheet.update_cell(idx, 7, total_izin + 1)   # Kolom G: Total Izin
-                        worksheet.update_cell(idx, 8, 'Izin')
-                        logger.info(f"✅ Updated {student_name}: Izin ({total_izin + 1}x)")
+                        elif status == 'Izin':
+                            worksheet.update_cell(idx, 7, total_izin + 1)   # Kolom G: Total Izin
+                            worksheet.update_cell(idx, 8, 'Izin')
+                            logger.info(f"✅ Updated {student_name}: Izin ({total_izin + 1}x)")
                     
-                    # Beri waktu singkat untuk update selesai
-                    import time
-                    time.sleep(1)
+                        # Beri waktu singkat untuk update selesai
+                        import time
+                        time.sleep(1)
                     
-                    logger.info(f"🎉 Successfully updated record for {student_name}: {status}")
-                    return True
+                        logger.info(f"🎉 Successfully updated record for {student_name}: {status}")
+                        return True
                     
-                except Exception as update_error:
-                    logger.error(f"❌ Failed to update cells for {student_name}: {update_error}")
-                    return False
+                    except Exception as update_error:
+                        logger.error(f"❌ Failed to update cells for {student_name}: {update_error}")
+                        return False
         
-        logger.warning(f"❌ Telegram ID {telegram_id} tidak ditemukan di spreadsheet")
-        return False
+            logger.warning(f"❌ Telegram ID {telegram_id} tidak ditemukan di spreadsheet")
+            return False
         
-    except Exception as e:
-        logger.error(f"💥 Critical error in update_student_record: {e}")
-        return False
+        except Exception as e:
+            logger.error(f"💥 Critical error in update_student_record: {e}")
+            return False
 
     def get_student_data_with_retry(self, max_retries=3):
         """Get student data dengan retry mechanism"""
@@ -888,6 +888,7 @@ class ClassroomAutoReminder:
         if self.reminder_thread:
             self.reminder_thread.join(timeout=5)
         return "❌ Reminder otomatis dihentikan"
+
 
 
 
