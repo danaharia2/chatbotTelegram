@@ -1,6 +1,5 @@
 # fiturBot/quiz_handler.py
 import logging
-import random
 import json
 import os
 import asyncio
@@ -81,40 +80,50 @@ class QuizManager:
             'start_time': datetime.now().isoformat(),
             'message_id': None,
             'timer_task': None,
-            'answered_users': set()
+            'answered_users': set(),
+            'is_finished': False
         }
         return True
     
-    async def start_question_timer(self, context, chat_id, duration=60):
+    async def start_question_timer(self, context, chat_id, question_num, duration=60):
         """Start timer untuk soal saat ini"""
-        if chat_id not in self.active_quizzes:
-            return
-        
         try:
-            logger.info(f"⏰ Timer started for question {self.active_quizzes[chat_id]['current_question'] + 1}")
+            logger.info(f"⏰ Starting {duration} second timer for question {question_num} in chat {chat_id}")
             
             # Tunggu selama duration
             await asyncio.sleep(duration)
             
             # Cek apakah quiz masih aktif dan di soal yang sama
             if (chat_id in self.active_quizzes and 
-                self.active_quizzes[chat_id]['current_question'] < len(self.quizzes[self.active_quizzes[chat_id]['quiz_id']]['questions'])):
+                not self.active_quizzes[chat_id].get('is_finished', False) and
+                self.active_quizzes[chat_id]['current_question'] == question_num - 1):
                 
-                active_quiz = self.active_quizzes[chat_id]
-                current_q = active_quiz['current_question']
-                total_q = len(self.quizzes[active_quiz['quiz_id']]['questions'])
+                logger.info(f"⏰ Timer expired for question {question_num}, moving to next question")
                 
                 # Kirim notifikasi waktu habis
-                await context.bot.send_message(
-                    chat_id=chat_id,
-                    text="⏰ **Waktu habis!** Melanjutkan ke soal berikutnya..."
-                )
+                try:
+                    await context.bot.send_message(
+                        chat_id=chat_id,
+                        text=f"⏰ **Waktu habis untuk soal {question_num}!** Melanjutkan ke soal berikutnya..."
+                    )
+                except Exception as e:
+                    logger.error(f"❌ Error sending timeout message: {e}")
                 
                 # Pindah ke soal berikutnya
                 await self.next_question_auto(context, chat_id)
+            else:
+                logger.info(f"⏰ Timer cancelled - quiz no longer active or question changed")
                 
+        except asyncio.CancelledError:
+            logger.info(f"⏰ Timer for question {question_num} was cancelled")
         except Exception as e:
-            logger.error(f"Error in question timer: {e}")
+            logger.error(f"❌ Error in question timer: {e}")
+            # Coba lanjutkan ke soal berikutnya meskipun ada error
+            try:
+                if chat_id in self.active_quizzes and not self.active_quizzes[chat_id].get('is_finished', False):
+                    await self.next_question_auto(context, chat_id)
+            except Exception as e2:
+                logger.error(f"❌ Error in error recovery: {e2}")
     
     def get_current_question(self, chat_id):
         """Get current question for active quiz"""
@@ -131,15 +140,19 @@ class QuizManager:
         return self.quizzes[quiz_id]['questions'][current_q]
     
     async def submit_answer(self, chat_id, user_id, username, answer_index):
-        """Submit answer for current question"""
+        """Submit answer for current question - SEMUA USER BISA JAWAB"""
         if chat_id not in self.active_quizzes:
-            return False, "No active quiz"
+            return False, "Tidak ada quiz aktif"
         
         active_quiz = self.active_quizzes[chat_id]
+        
+        if active_quiz.get('is_finished', False):
+            return False, "Quiz sudah selesai"
+        
         current_question = self.get_current_question(chat_id)
         
         if not current_question:
-            return False, "Quiz finished"
+            return False, "Quiz sudah selesai"
         
         is_correct = (answer_index == current_question['correct_answer'])
         
@@ -152,7 +165,7 @@ class QuizManager:
                 'quizzes_taken': []
             }
         
-        # Update participant score
+        # Update participant score untuk quiz ini
         if str(user_id) not in active_quiz['participants']:
             active_quiz['participants'][str(user_id)] = {
                 'username': username,
@@ -160,10 +173,11 @@ class QuizManager:
                 'answers': []
             }
         
-        # Cek jika user sudah menjawab soal ini
-        if user_id in active_quiz['answered_users']:
-            return False, "Anda sudah menjawab soal ini"
+        # Cek jika user sudah menjawab soal ini - HAPUS PEMBATASAN INI
+        # if user_id in active_quiz['answered_users']:
+        #     return False, "Anda sudah menjawab soal ini"
         
+        # Tambahkan jawaban user
         active_quiz['participants'][str(user_id)]['answers'].append({
             'question_index': active_quiz['current_question'],
             'answer': answer_index,
@@ -171,10 +185,11 @@ class QuizManager:
             'time': datetime.now().isoformat()
         })
         
+        # Update score jika benar
         if is_correct:
             active_quiz['participants'][str(user_id)]['score'] += 1
         
-        # Tambahkan user ke set yang sudah menjawab
+        # Tambahkan user ke set yang sudah menjawab (tapi tidak membatasi)
         active_quiz['answered_users'].add(user_id)
         
         return True, is_correct
@@ -182,33 +197,46 @@ class QuizManager:
     async def next_question_auto(self, context, chat_id):
         """Move to next question automatically"""
         if chat_id not in self.active_quizzes:
+            logger.error(f"❌ No active quiz found for chat {chat_id}")
             return False
         
         active_quiz = self.active_quizzes[chat_id]
-        active_quiz['current_question'] += 1
-        active_quiz['answered_users'] = set()  # Reset untuk soal baru
         
         # Cancel previous timer jika ada
         if active_quiz['timer_task']:
-            active_quiz['timer_task'].cancel()
+            try:
+                active_quiz['timer_task'].cancel()
+            except:
+                pass
+            logger.info("✅ Previous timer cancelled")
+        
+        active_quiz['current_question'] += 1
+        active_quiz['answered_users'] = set()  # Reset untuk soal baru
         
         # Check if quiz finished
-        if active_quiz['current_question'] >= len(self.quizzes[active_quiz['quiz_id']]['questions']):
+        quiz_data = self.quizzes[active_quiz['quiz_id']]
+        if active_quiz['current_question'] >= len(quiz_data['questions']):
+            logger.info("🎯 Quiz finished - all questions completed")
             return await self.finish_quiz_auto(context, chat_id)
         
         # Send next question
         question = self.get_current_question(chat_id)
-        quiz_data = self.quizzes[active_quiz['quiz_id']]
+        if not question:
+            logger.error("❌ No question found for current index")
+            return await self.finish_quiz_auto(context, chat_id)
+        
         current_q = active_quiz['current_question']
         total_q = quiz_data['total_questions']
         
+        logger.info(f"📝 Sending question {current_q + 1}/{total_q}")
         await self.send_question(context, chat_id, question, current_q + 1, total_q)
         
         # Start timer untuk soal ini
         active_quiz['timer_task'] = asyncio.create_task(
-            self.start_question_timer(context, chat_id, 60)
+            self.start_question_timer(context, chat_id, current_q + 1, 60)
         )
         
+        logger.info(f"⏰ Timer started for question {current_q + 1}")
         return True
     
     async def finish_quiz_auto(self, context, chat_id):
@@ -217,6 +245,15 @@ class QuizManager:
             return None
         
         active_quiz = self.active_quizzes[chat_id]
+        active_quiz['is_finished'] = True
+        
+        # Cancel timer jika ada
+        if active_quiz['timer_task']:
+            try:
+                active_quiz['timer_task'].cancel()
+            except:
+                pass
+        
         quiz_id = active_quiz['quiz_id']
         participants = active_quiz['participants']
         
@@ -248,10 +285,13 @@ class QuizManager:
             'total_questions': self.quizzes[quiz_id]['total_questions']
         }
         
-        # Remove active quiz
-        del self.active_quizzes[chat_id]
-        
+        # Remove active quiz setelah menampilkan results
         await self.show_quiz_results(context, chat_id, results)
+        
+        # Hapus dari active quizzes
+        if chat_id in self.active_quizzes:
+            del self.active_quizzes[chat_id]
+        
         return results
 
     async def send_question(self, context, chat_id, question, current_q, total_q):
@@ -265,19 +305,24 @@ class QuizManager:
         
         reply_markup = InlineKeyboardMarkup(keyboard)
         
-        # Tambah info timer
-        timer_info = "\n\n⏰ **Timer:** 60 detik (otomatis lanjut)"
+        # Tambah info timer yang lebih jelas
+        timer_info = "\n\n⏰ **Timer:** 60 detik • Otomatis lanjut ke soal berikutnya"
+        multiple_info = "\n\n👥 **Semua peserta bisa menjawab!**"
         
-        message = await context.bot.send_message(
-            chat_id=chat_id,
-            text=f"❓ **PERTANYAAN {current_q}/{total_q}**\n\n{question['question']}{timer_info}",
-            reply_markup=reply_markup,
-            parse_mode='Markdown'
-        )
-        
-        # Store message ID
-        if chat_id in self.active_quizzes:
-            self.active_quizzes[chat_id]['message_id'] = message.message_id
+        try:
+            message = await context.bot.send_message(
+                chat_id=chat_id,
+                text=f"❓ **PERTANYAAN {current_q}/{total_q}**\n\n{question['question']}{timer_info}{multiple_info}",
+                reply_markup=reply_markup,
+                parse_mode='Markdown'
+            )
+            
+            # Store message ID
+            if chat_id in self.active_quizzes:
+                self.active_quizzes[chat_id]['message_id'] = message.message_id
+                
+        except Exception as e:
+            logger.error(f"❌ Error sending question: {e}")
 
     async def show_quiz_results(self, context, chat_id, results):
         """Show quiz results"""
@@ -299,11 +344,37 @@ class QuizManager:
             avg_score = total_score / len(results['participants'])
             results_text += f"\n📈 **Rata-rata Score:** {avg_score:.1f}"
         
-        await context.bot.send_message(
-            chat_id=chat_id,
-            text=results_text,
-            parse_mode='Markdown'
-        )
+        try:
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text=results_text,
+                parse_mode='Markdown'
+            )
+        except Exception as e:
+            logger.error(f"❌ Error sending results: {e}")
+    
+    def get_leaderboard(self, limit=10):
+        """Get global leaderboard - FIXED VERSION"""
+        try:
+            if not self.user_scores:
+                return []
+            
+            # Convert to list and sort by total_score descending
+            leaderboard_data = []
+            for user_id, data in self.user_scores.items():
+                leaderboard_data.append((user_id, data))
+            
+            # Sort by total_score descending
+            sorted_scores = sorted(
+                leaderboard_data,
+                key=lambda x: x[1]['total_score'],
+                reverse=True
+            )[:limit]
+            
+            return sorted_scores
+        except Exception as e:
+            logger.error(f"❌ Error in get_leaderboard: {e}")
+            return []
 
 # Global quiz manager instance
 quiz_manager = QuizManager()
@@ -331,6 +402,10 @@ async def quiz_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
 • Otomatis lanjut ke soal berikutnya
 • Otomatis berakhir ketika soal habis
 • Bisa dijalankan dari private chat atau grup
+
+**👥 FITUR BARU:**
+• Semua peserta bisa menjawab setiap soal
+• Tidak ada batasan jumlah jawaban per soal
 
 **📝 Cara Pakai:**
 1. Buat quiz: `/create_quiz`
@@ -561,6 +636,7 @@ async def start_quiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
                      f"**Instruksi:**\n"
                      f"• Klik tombol untuk menjawab\n"
                      f"• Setiap soal punya waktu 60 detik\n"
+                     f"• Semua peserta bisa menjawab\n"
                      f"• Otomatis lanjut ke soal berikutnya\n"
                      f"• Selamat bermain! 🎮"
             )
@@ -574,15 +650,18 @@ async def start_quiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
             # Start timer untuk soal pertama
             active_quiz = quiz_manager.active_quizzes[target_chat_id]
             active_quiz['timer_task'] = asyncio.create_task(
-                quiz_manager.start_question_timer(context, target_chat_id, 60)
+                quiz_manager.start_question_timer(context, target_chat_id, 1, 60)
             )
+            
+            logger.info(f"✅ Quiz started successfully with timer for question 1")
             
             # Konfirmasi jika di grup
             if update.effective_chat.type != 'private':
                 await update.message.reply_text(
                     f"✅ **Quiz dimulai di {start_location}!**\n\n"
                     f"⏰ **Timer aktif:** 60 detik per soal\n"
-                    f"🔢 **Total soal:** {quiz_data['total_questions']}"
+                    f"🔢 **Total soal:** {quiz_data['total_questions']}\n"
+                    f"👥 **Mode:** Semua peserta bisa menjawab"
                 )
                 
         else:
@@ -615,7 +694,10 @@ async def next_question(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Cancel timer saat ini
     active_quiz = quiz_manager.active_quizzes[target_chat_id]
     if active_quiz['timer_task']:
-        active_quiz['timer_task'].cancel()
+        try:
+            active_quiz['timer_task'].cancel()
+        except:
+            pass
     
     await context.bot.send_message(
         chat_id=target_chat_id,
@@ -649,36 +731,44 @@ async def finish_quiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Cancel timer
     active_quiz = quiz_manager.active_quizzes[target_chat_id]
     if active_quiz['timer_task']:
-        active_quiz['timer_task'].cancel()
+        try:
+            active_quiz['timer_task'].cancel()
+        except:
+            pass
     
     await context.bot.send_message(
         chat_id=target_chat_id,
         text="🛑 **Quiz diakhiri manual oleh admin...**"
     )
     
-    # Paksa finish dengan mengatur current_question ke akhir
-    quiz_data = quiz_manager.quizzes[active_quiz['quiz_id']]
-    active_quiz['current_question'] = quiz_data['total_questions']
-    
+    # Paksa finish
     await quiz_manager.finish_quiz_auto(context, target_chat_id)
 
 async def quiz_leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Show global leaderboard"""
-    leaderboard = quiz_manager.get_leaderboard(10)
-    
-    if not leaderboard:
-        await update.message.reply_text("❌ Belum ada data leaderboard. Ikuti quiz dulu!")
-        return
-    
-    leaderboard_text = "🏆 **LEADERBOARD GLOBAL** 🏆\n\n"
-    
-    for i, (user_id, data) in enumerate(leaderboard, 1):
-        medal = "🥇" if i == 1 else "🥈" if i == 2 else "🥉" if i == 3 else f"{i}."
-        leaderboard_text += f"{medal} **{data['username']}** - {data['total_score']} poin ({data['total_quizzes']} quiz)\n"
-    
-    leaderboard_text += f"\n**Total pemain:** {len(quiz_manager.user_scores)}"
-    
-    await update.message.reply_text(leaderboard_text, parse_mode='Markdown')
+    """Show global leaderboard - FIXED VERSION"""
+    try:
+        leaderboard = quiz_manager.get_leaderboard(10)
+        
+        if not leaderboard:
+            await update.message.reply_text(
+                "❌ **Belum ada data leaderboard!**\n\n"
+                "Ikuti quiz terlebih dahulu untuk melihat peringkat."
+            )
+            return
+        
+        leaderboard_text = "🏆 **LEADERBOARD GLOBAL** 🏆\n\n"
+        
+        for i, (user_id, data) in enumerate(leaderboard, 1):
+            medal = "🥇" if i == 1 else "🥈" if i == 2 else "🥉" if i == 3 else f"{i}."
+            leaderboard_text += f"{medal} **{data['username']}** - {data['total_score']} poin ({data['total_quizzes']} quiz)\n"
+        
+        leaderboard_text += f"\n**Total pemain:** {len(quiz_manager.user_scores)}"
+        
+        await update.message.reply_text(leaderboard_text, parse_mode='Markdown')
+        
+    except Exception as e:
+        logger.error(f"❌ Error in quiz_leaderboard: {e}")
+        await update.message.reply_text("❌ Terjadi error saat mengambil leaderboard.")
 
 async def my_quiz_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Show user's quiz statistics"""
@@ -686,7 +776,7 @@ async def my_quiz_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     if str(user_id) not in quiz_manager.user_scores:
         await update.message.reply_text(
-            "❌ Anda belum pernah mengikuti quiz.\n\n"
+            "❌ **Anda belum pernah mengikuti quiz!**\n\n"
             "Ikuti quiz yang aktif untuk melihat statistik Anda!"
         )
         return
@@ -712,7 +802,7 @@ async def my_quiz_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # Callback query handler for quiz answers
 async def handle_quiz_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle quiz callback queries"""
+    """Handle quiz callback queries - SEMUA USER BISA JAWAB"""
     query = update.callback_query
     await query.answer()
     
@@ -736,22 +826,21 @@ async def handle_quiz_callback(update: Update, context: ContextTypes.DEFAULT_TYP
             
             if success:
                 if result:
-                    # Jawaban benar
-                    await query.edit_message_text(
-                        text=query.message.text + f"\n\n✅ **{username} menjawab benar!** 🎉",
-                        parse_mode='Markdown'
+                    # Jawaban benar - kirim pesan terpisah
+                    await context.bot.send_message(
+                        chat_id=chat_id,
+                        text=f"✅ **{username} menjawab benar!** 🎉",
+                        reply_to_message_id=query.message.message_id
                     )
                 else:
-                    # Jawaban salah
-                    await query.edit_message_text(
-                        text=query.message.text + f"\n\n❌ **{username} menjawab salah!**",
-                        parse_mode='Markdown'
+                    # Jawaban salah - kirim pesan terpisah
+                    await context.bot.send_message(
+                        chat_id=chat_id,
+                        text=f"❌ **{username} menjawab salah!**",
+                        reply_to_message_id=query.message.message_id
                     )
             else:
-                if result == "Anda sudah menjawab soal ini":
-                    await query.answer("⚠️ Anda sudah menjawab soal ini!", show_alert=True)
-                else:
-                    await query.answer(f"⚠️ {result}", show_alert=True)
+                await query.answer(f"⚠️ {result}", show_alert=True)
         
         elif data.startswith("quiz_correct_"):
             # Handle correct answer selection selama pembuatan quiz
