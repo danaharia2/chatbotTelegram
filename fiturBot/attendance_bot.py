@@ -64,7 +64,7 @@ class AttendanceBot:
             df = pd.DataFrame(data)
 
             # Konversi kolom numerik dari string ke integer
-            numeric_columns = ['Total Alpha', 'Total Izin', 'Telegram ID']
+            numeric_columns = ['Total Hadir', 'Total Alpha', 'Total Izin', 'Telegram ID']
 
             for col in numeric_columns:
                 if col in df.columns:
@@ -869,6 +869,7 @@ class ClassroomAutoReminder:
         if self.reminder_thread:
             self.reminder_thread.join(timeout=5)
         return "❌ Reminder otomatis dihentikan"
+
 
 
 
