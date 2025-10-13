@@ -89,37 +89,38 @@ class AttendanceBot:
     def update_student_record(self, telegram_id, status):
         """Update record kehadiran murid (simpan data angka)"""
         try:
-            worksheet = self.client.open_by_key(self.sheet_id).worksheet(self.sheet_name)
-            data = worksheet.get_all_values()
-            df = self.get_student_data()
-          
+            data = self.worksheet.get_all_values()
+            if not data:
+                return False          
             
             # Cari baris berdasarkan Telegram ID
             for idx, row in enumerate(data[1:], start=2):
-                if str(row['Telegram ID']) == str(telegram_id):
+                if len(row) > 1 and row[1] == str(telegram_id):
                     try: 
                         total_hadir = int(row[4]) if row[4] else 0
                         total_alpha = int(row[5]) if row[5] else 0
-                        total_izin = int(row[6]) if row[6] status
-
-                    except (ValueError, TypeError):
+                        total_izin = int(row[6]) if row[6] else 0
+                        
+                    except (ValueError, TypeError) as e:
+                        logger.error(f"Error converting number: {e}")
+                        
                         total_hadir = 0
                         total_alpha = 0
                         total_izin = 0
                     
                     # Update total alpha atau izin berdasarkan
                     if status == 'Hadir':
-                        worksheet.update_cell(idx, 5, total_hadir + 1)  # Total Hadir +1
-                        worksheet.update_cell(idx, 8, 'Hadir')
+                        self.worksheet.update_cell(idx, 5, total_hadir + 1)  # Total Hadir +1
+                        self.worksheet.update_cell(idx, 8, 'Hadir')
                         
                     elif status == 'Alpha':
                         # Update Total Alpha (angka) dan Status Terakhir (teks)
-                        worksheet.update_cell(idx, 6, total_alpha + 1)  # Total Alpha +1
-                        worksheet.update_cell(idx, 8, 'Alpha')
+                        self.worksheet.update_cell(idx, 6, total_alpha + 1)  # Total Alpha +1
+                        self.worksheet.update_cell(idx, 8, 'Alpha')
 
                     elif status == 'Izin':
-                        worksheet.update_cell(idx, 7, total_izin + 1)   # Total Izin +1
-                        worksheet.update_cell(idx, 8, 'Izin')
+                        self.worksheet.update_cell(idx, 7, total_izin + 1)   # Total Izin +1
+                        self.worksheet.update_cell(idx, 8, 'Izin')
 
                     logger.info(f"✅ Updated record for {row['Nama']}: {status}")
                     return True
@@ -846,6 +847,7 @@ class ClassroomAutoReminder:
         if self.reminder_thread:
             self.reminder_thread.join(timeout=5)
         return "❌ Reminder otomatis dihentikan"
+
 
 
 
