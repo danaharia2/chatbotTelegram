@@ -20,9 +20,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/status - Lihat status kehadiran\n"
         "/test - Test koneksi Google Sheets\n"
         "/myinfo - Lihat info Anda\n"
-        "/start_quiz <quiz_id> - Mulai mengerjakan quiz\n"
-        "/continue_quiz - Lanjutkan quiz yang sedang dikerjakan\n"
-        "/my_score - Lihat score quiz terakhir\n"
         "/register - Buat pendaftaran ke sistem\n"
         "/quiz_leaderboard - Lihat peringkat global\n"
         "/my_quiz_stats - Statistik quiz pribadi\n"
@@ -440,6 +437,7 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Contoh: `/register Andi Wijaya andi@gmail.com`",
             parse_mode='Markdown'
         )
+
 
 
 
