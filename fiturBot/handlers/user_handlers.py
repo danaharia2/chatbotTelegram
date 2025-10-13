@@ -152,7 +152,13 @@ async def absen(update: Update, context: ContextTypes.DEFAULT_TYPE):
     bot = AttendanceBot()
     
     # Cek apakah user sudah terdaftar
-    df = bot.get_student_data()
+    df = bot.get_student_data_with_retry()
+    if df.empty:
+            await update.message.reply_text(
+                "❌ **Sistem sedang sibuk, silakan coba lagi dalam beberapa detik.**"
+            )
+            return
+        
     student_data = df[df['Telegram ID'] == user_id]
     
     if student_data.empty:
@@ -171,9 +177,9 @@ async def absen(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Konversi ke integer untuk memastikan tipe data benar
     try:
-        total_hadir = int(student['Total Hadir']) if 'Total Hadir' in student else 0
-        total_alpha = int(student['Total Alpha'])
-        total_izin = int(student['Total Izin'])
+        total_hadir = int(student['Total Hadir']) if 'Total Hadir' in student and str(student['Total Hadir']).strip().isdigit() else 0
+        total_alpha = int(student['Total Alpha']) if 'Total Alpha' in student and str(student['Total Alpha']).strip().isdigit() else 0
+        total_izin = int(student['Total Izin']) if 'Total Izin' in student and str(student['Total Izin']).strip().isdigit() else 0
     except (ValueError, TypeError):
         total_hadir = 0
         total_alpha = 0
@@ -218,8 +224,43 @@ async def absen(update: Update, context: ContextTypes.DEFAULT_TYPE):
     success = bot.update_student_record(user_id, status_absen.capitalize())
     
     if success:
+        if status_absen == 'hadir':
+            total_hadir_updated = total_hadir + 1
+            total_alpha_updated = total_alpha
+            total_izin_updated = total_izin
+
+        elif status_absen == 'alpha':
+            total_hadir_updated = total_hadir
+            total_alpha_updated = total_alpha + 1
+            total_izin_updated = total_izin
+
+        else:
+            total_hadir_updated = total_hadir 
+            total_alpha_updated = total_alpha
+            total_izin_updated = total_izin + 1
+
+        emoji = {
+            'hadir': '✅',
+            'izin': '⚠️', 
+            'alpha': '❌'
+        }
+        
+        message = (
+            f"{emoji[status_absen]} **ABSENSI BERHASIL DICATAT**\n\n"
+            f"👤 **Nama:** {student_name}\n"
+            f"📝 **Status:** {status_absen.capitalize()}\n"
+            f"🕐 **Waktu:** {update.message.date.strftime('%d/%m/%Y %H:%M')}\n\n"
+            f"📊 **Update Status:**\n"
+            f"• Total Hadir: {total_hadir_updated}x\n"
+            f"• Total Alpha: {total_alpha_updated}x\n"
+            f"• Total Izin: {total_izin_updated}x\n"
+            f"• Status Terakhir: {student_updated['Status Terakhir']}"
+        )
+
+        
+    elif success_2: 
         # Dapatkan data terbaru untuk konfirmasi
-        df_updated = bot.get_student_data()
+        df_updated = bot.get_student_data_with_reply()
         student_updated = df_updated[df_updated['Telegram ID'] == user_id].iloc[0]
 
         # Konversi ke integer untuk data terbaru
@@ -263,9 +304,26 @@ async def absen(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         await update.message.reply_text(message)
     else:
+        import time
+        time.sleep(3)
+        df_final = bot.get_student_data_with_retry()
+        final_check = df_final[df_final['Telegram ID'] == user_id]
+        if not final_check.empty:
+            final_student = final_check.iloc[0] if (status_absen == 'hadir' and final_student.get('Status Terakhir') == 'Hadir') or \
+            (status_absen == 'izin' and final_student.get('Status Terakhir') == 'Izin') or \
+            (status_absen == 'alpha' and final_student.get('Status Terakhir') == 'Alpha'):
+
+        await update.message.reply_text(
+            f"✅ **Absensi berhasil!** (Terconfirmasi)\n"
+            f"Status: {status_absen.capitalize()}\n"
+            f"Data sudah tersimpan di sistem."
+        )
+        return
+        
         await update.message.reply_text(
             "❌ **Gagal mencatat absensi!**\n"
-            "Silakan coba lagi atau hubungi admin."
+            "Tapi data mungkin sudah tersimpan. Cek /status untuk memastikan.\n"
+            "Jika masalah berlanjut, hubungi admin."
         )
 
 async def send_attendance_notification(context: ContextTypes.DEFAULT_TYPE, user_id: int, student_name: str, total_hadir: int):
@@ -501,6 +559,7 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Contoh: `/register Andi Wijaya andi@gmail.com`",
             parse_mode='Markdown'
         )
+
 
 
 
