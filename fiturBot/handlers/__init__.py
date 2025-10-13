@@ -20,8 +20,9 @@ __all__ = [
     'quiz_leaderboard',
     'my_quiz_stats',
     'handle_quiz_callback',
-    'handle_quiz_creation',
+    'handle_quiz_message',
 ]
+
 
 
 
