@@ -104,9 +104,9 @@ class AttendanceBot:
                         total_izin = int(row[6]) if row[6] status
 
                     except (ValueError, TypeError):
-                    total_hadir = 0
-                    total_alpha = 0
-                    total_izin = 0
+                        total_hadir = 0
+                        total_alpha = 0
+                        total_izin = 0
                     
                     # Update total alpha atau izin berdasarkan
                     if status == 'Hadir':
@@ -847,6 +847,7 @@ class ClassroomAutoReminder:
         if self.reminder_thread:
             self.reminder_thread.join(timeout=5)
         return "❌ Reminder otomatis dihentikan"
+
 
 
 
