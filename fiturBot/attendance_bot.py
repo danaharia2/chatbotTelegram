@@ -97,17 +97,17 @@ class AttendanceBot:
                 if str(row['Telegram ID']) == str(telegram_id):
                     # Update status terakhir
                     self.worksheet.update_cell(idx + 2, 8, status)
+                    current_hadir = int(row['Total Hadir']) if pd.notna(row['Total Hadir']) else 0
+                    current_alpha = int(row['Total Alpha']) if pd.notna(row['Total Alpha']) else 0
+                    current_izin = int(row['Total Izin']) if pd.notna(row['Total Izin']) else 0
 
                 if status == 'Hadir':
-                        current_hadir = int(row['Total Total']) if pd.notna(row['Total Hadir']) else 0
                         self.worksheet.update_cell(idx + 2, 5, current_hadir + 1)
                         logger.info(f"✅ Updated Hadir for {row['Nama']}: {current_hadir} → {current_hadir + 1}")
                 elif status == 'Alpha':
-                        current_alpha = int(row['Total Alpha']) if pd.notna(row['Total Alpha']) else 0
                         self.worksheet.update_cell(idx + 2, 6, current_alpha + 1)
                         logger.info(f"✅ Updated Alpha for {row['Nama']}: {current_alpha} → {current_alpha + 1}")
                 elif status == 'Izin':
-                        current_izin = int(row['Total Izin']) if pd.notna(row['Total Izin']) else 0
                         self.worksheet.update_cell(idx + 2, 7, current_izin + 1)
                         logger.info(f"✅ Updated Izin for {row['Nama']}: {current_izin} → {current_izin + 1}")
 
@@ -853,6 +853,7 @@ class ClassroomAutoReminder:
         if self.reminder_thread:
             self.reminder_thread.join(timeout=5)
         return "❌ Reminder otomatis dihentikan"
+
 
 
 
