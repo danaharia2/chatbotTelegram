@@ -282,18 +282,8 @@ async def absen(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         await update.message.reply_text(message)
     else:
-        waktu_wib = get_wib_time().strftime('%d/%m/%Y %H:%M WIB')
-        await update.message.reply_text(
-            f"✅ **Absensi berhasil!** (Terconfirmasi)\n"
-            f"Status: {status_absen.capitalize()}\n"
-            f"Waktu: {waktu_wib}\n"
-            f"Data sudah tersimpan di sistem."
-        )
-        return
-        
         await update.message.reply_text(
             "❌ **Gagal mencatat absensi!**\n"
-            "Tapi data mungkin sudah tersimpan. Cek /status untuk memastikan.\n"
             "Jika masalah berlanjut, hubungi admin."
         )
 
@@ -541,6 +531,7 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Contoh: `/register Andi Wijaya andi@gmail.com`",
             parse_mode='Markdown'
         )
+
 
 
 
