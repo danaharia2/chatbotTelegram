@@ -140,14 +140,14 @@ class AttendanceBot:
     def get_student_data_with_retry(self, max_retries=3):
         """Get student data dengan retry mechanism"""
         for attempt in range(max_retries):
-        try:
-            df = self.get_student_data()
-            if not df.empty:
-                return df
-            logger.warning(f"Empty dataframe, retry {attempt + 1}/{max_retries}")
+            try:
+                df = self.get_student_data()
+                if not df.empty:
+                    return df
+                logger.warning(f"Empty dataframe, retry {attempt + 1}/{max_retries}")
 
-        except Exception as e:
-            logger.warning(f"Attempt {attempt + 1} failed: {e}")
+            except Exception as e:
+                logger.warning(f"Attempt {attempt + 1} failed: {e}")
 
         import pandas as pd
         return pd.DataFrame()
@@ -869,6 +869,7 @@ class ClassroomAutoReminder:
         if self.reminder_thread:
             self.reminder_thread.join(timeout=5)
         return "❌ Reminder otomatis dihentikan"
+
 
 
 
