@@ -1,4 +1,4 @@
-Falseert gspread
+import gspread
 import pandas as pd
 import os
 import logging
@@ -846,6 +846,7 @@ class ClassroomAutoReminder:
         if self.reminder_thread:
             self.reminder_thread.join(timeout=5)
         return "❌ Reminder otomatis dihentikan"
+
 
 
 
