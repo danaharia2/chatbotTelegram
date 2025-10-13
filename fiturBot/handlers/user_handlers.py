@@ -3,10 +3,22 @@ from telegram.ext import ContextTypes
 import logging
 from ..attendance_bot import AttendanceBot
 from config import ADMIN_IDS
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import random
 
 logger = logging.getLogger(__name__)
+
+WIB = timezone(timedelta(hours=7))
+def get_wib_time():
+    """Mendapatkan waktu sekarang dalam WIB"""
+    return datetime.now(WIB)
+
+def get_monday_wib():
+    """Mendapatkan hari Senin minggu ini dalam WIB"""
+    today = get_wib_time()
+    # weekday() -> Senin=0, Minggu=6
+    monday = today - timedelta(days=today.weekday())
+    return monday
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handler untuk command /start"""
@@ -559,6 +571,7 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Contoh: `/register Andi Wijaya andi@gmail.com`",
             parse_mode='Markdown'
         )
+
 
 
 
