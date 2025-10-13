@@ -325,7 +325,7 @@ async def send_attendance_notification(context: ContextTypes.DEFAULT_TYPE, user_
 
     notification_message = (
         f"🎉 **NOTIFIKASI KEHADIRAN** 🎉\n\n"
-        f"User ID {user_id} dan nama {student_name}\n"
+        f"User ID {user_id} atas nama {student_name}\n"
         f"Terima kasih telah hadir pada {tanggal_str}\n\n"
         f"**{motivasi}**\n\n"
         f"📈 **Total Kehadiran:** {total_hadir}x\n\n"
@@ -406,7 +406,7 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message = (
         f"📊 **STATUS KEHADIRAN**\n\n"
         f"👤 **Nama:** {student['Nama']}\n"
-        f"• ✅ Total Hadir: {total_hadir}\n"
+        f"✅ **Total Hadir**: {total_hadir}x\n"
         f"❌ **Total Alpha:** {total_alpha}x\n"
         f"⚠️ **Total Izin:** {total_izin}x\n"
         f"📝 **Status Terakhir:** {student['Status Terakhir']}"
@@ -531,6 +531,7 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Contoh: `/register Andi Wijaya andi@gmail.com`",
             parse_mode='Markdown'
         )
+
 
 
 
