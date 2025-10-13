@@ -3,9 +3,9 @@ from .admin_handlers import (
     admin_stats, reset_attendance, force_attendance_check, export_data, manual_kick, list_warnings, classroom_reminder_now, class_reminder_now, check_topics, admin_help, test_classroom, start_auto_reminder, stop_auto_reminder, test_auto_reminder
 )
 from fiturBot.quiz_handler import (
-    quiz_help, create_quiz, list_quizzes, start_quiz, continue_quiz,
-    my_score, quiz_leaderboard, my_quiz_stats, quiz_status,
-    handle_quiz_callback, handle_quiz_message
+    quiz_help, create_quiz, list_quizzes, start_quiz, next_question,
+    finish_quiz, quiz_leaderboard, my_quiz_stats, handle_quiz_callback,
+    handle_quiz_message
 )
 
 __all__ = [
@@ -15,14 +15,14 @@ __all__ = [
     'create_quiz', 
     'list_quizzes',
     'start_quiz',
-    'continue_quiz',
-    'my_score',
+    'next_question',
+    'finish_quiz',
     'quiz_leaderboard',
     'my_quiz_stats',
-    'quiz_status',
     'handle_quiz_callback',
     'handle_quiz_message',
 ]
+
 
 
 
