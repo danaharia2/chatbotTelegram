@@ -89,17 +89,18 @@ class AttendanceBot:
     def update_student_record(self, telegram_id, status):
         """Update record kehadiran murid (simpan data angka)"""
         try:
-            data = self.worksheet.get_all_values()
-            if not data:
-                return False          
+            worksheet = self.client.open_by_key(self.sheet_id).worksheet(self.sheet_name)
+            data = worksheet.get_all_values()          
             
             # Cari baris berdasarkan Telegram ID
             for idx, row in enumerate(data[1:], start=2):
-                if len(row) > 1 and row[1] == str(telegram_id):
+                if len(row) < 8:
+                    continue
+                if row[1] == str(telegram_id):
                     try: 
-                        total_hadir = int(row[4]) if row[4] else 0
-                        total_alpha = int(row[5]) if row[5] else 0
-                        total_izin = int(row[6]) if row[6] else 0
+                        total_hadir = int(row[4]) if row[4] and row[4].strip().isdigit() else 0
+                        total_alpha = int(row[5]) if row[5] and row[5].strip().isdigit() else 0
+                        total_izin = int(row[6]) if row[6] and row[6].strip().isdigit() else 0
                         
                     except (ValueError, TypeError) as e:
                         logger.error(f"Error converting number: {e}")
@@ -110,17 +111,21 @@ class AttendanceBot:
                     
                     # Update total alpha atau izin berdasarkan
                     if status == 'Hadir':
-                        self.worksheet.update_cell(idx, 5, total_hadir + 1)  # Total Hadir +1
-                        self.worksheet.update_cell(idx, 8, 'Hadir')
+                        worksheet.update_cell(idx, 5, total_hadir + 1)  # Total Hadir +1
+                        worksheet.update_cell(idx, 8, 'Hadir')
                         
                     elif status == 'Alpha':
                         # Update Total Alpha (angka) dan Status Terakhir (teks)
-                        self.worksheet.update_cell(idx, 6, total_alpha + 1)  # Total Alpha +1
-                        self.worksheet.update_cell(idx, 8, 'Alpha')
+                        worksheet.update_cell(idx, 6, total_alpha + 1)  # Total Alpha +1
+                        worksheet.update_cell(idx, 8, 'Alpha')
 
                     elif status == 'Izin':
-                        self.worksheet.update_cell(idx, 7, total_izin + 1)   # Total Izin +1
-                        self.worksheet.update_cell(idx, 8, 'Izin')
+                        worksheet.update_cell(idx, 7, total_izin + 1)   # Total Izin +1
+                        worksheet.update_cell(idx, 8, 'Izin')
+
+                    import time
+                    time.sleep(2)
+                    return True
 
                     logger.info(f"✅ Updated record for {row['Nama']}: {status}")
                     return True
@@ -132,6 +137,23 @@ class AttendanceBot:
             logger.error(f"Error updating student record: {e}")
             return False
 
+    def get_student_data_with_retry(self, max_retries=3):
+        """Get student data dengan retry mechanism"""
+        for attempt in range(max_retries):
+        try:
+            df = self.get_student_data()
+            if not df.empty:
+                return df
+            logger.warning(f"Empty dataframe, retry {attempt + 1}/{max_retries}")
+
+        except Exception as e:
+            logger.warning(f"Attempt {attempt + 1} failed: {e}")
+
+        import pandas as pd
+        return pd.DataFrame()
+        import pandas as pd
+        return pd.DataFrame()
+    
     def check_auto_kick_conditions(self):
         """Memeriksa kondisi untuk mengeluarkan murid secara otomatis"""
         try:
@@ -225,7 +247,7 @@ class AttendanceBot:
                     student_profile = classroom_service.userProfiles().get(
                         userId=submission['userId']
                     ).execute()
-                    student_email = student_profile.get('emailAddress', '')
+                    student_eFalse = student_profile.get('emailAddress', '')
                     if student_email:
                         submitted_emails.append(student_email.lower())
         
@@ -847,6 +869,7 @@ class ClassroomAutoReminder:
         if self.reminder_thread:
             self.reminder_thread.join(timeout=5)
         return "❌ Reminder otomatis dihentikan"
+
 
 
 
