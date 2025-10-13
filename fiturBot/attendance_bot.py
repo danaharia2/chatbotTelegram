@@ -85,75 +85,76 @@ class AttendanceBot:
         except Exception as e:
             logger.error(f"Error getting student data: {e}")
             return pd.DataFrame()
-    
+
     def update_student_record(self, telegram_id, status):
-        """Update record kehadiran murid (simpan data angka)"""
+        """Update record kehadiran murid dengan batch update yang lebih efisien"""
         try:
             worksheet = self.client.open_by_key(self.sheet_id).worksheet(self.sheet_name)
             data = worksheet.get_all_values()
         
-            logger.info(f"🔍 Mencari user dengan Telegram ID: {telegram_id}")
+            logger.info(f"🔍 Searching for Telegram ID: {telegram_id}")
         
-            # Cari baris berdasarkan Telegram ID (kolom B, index 1)
-            for idx, row in enumerate(data[1:], start=2):  # start=2 karena baris 1 header
+            # Cari baris berdasarkan Telegram ID
+            for idx, row in enumerate(data[1:], start=2):
                 if len(row) < 8:
                     continue
                 
-                # Kolom B (index 1) adalah Telegram ID
                 if row[1] == str(telegram_id):
                     student_name = row[2] if len(row) > 2 else "Unknown"
-                    logger.info(f"📝 Found student: {student_name} at row {idx}")
+                    logger.info(f"📝 Found: {student_name} at row {idx}")
                 
-                    try: 
-                        # Konversi nilai ke integer dengan aman
-                        # Kolom E (index 4): Total Hadir
-                        # Kolom F (index 5): Total Alpha  
-                        # Kolom G (index 6): Total Izin
-                        total_hadir = int(row[4]) if row[4] and row[4].strip().isdigit() else 0
-                        total_alpha = int(row[5]) if row[5] and row[5].strip().isdigit() else 0
-                        total_izin = int(row[6]) if row[6] and row[6].strip().isdigit() else 0
-                    
-                        logger.info(f"📊 Current totals - Hadir: {total_hadir}, Alpha: {total_alpha}, Izin: {total_izin}")
-                    
-                    except (ValueError, TypeError) as e:
-                        logger.error(f"❌ Error converting numbers for {student_name}: {e}")
-                        total_hadir = 0
-                        total_alpha = 0
-                        total_izin = 0
+                    # Konversi nilai dengan safe function
+                    def safe_int(val):
+                        try:
+                            return int(val) if str(val).strip().isdigit() else 0
+                        except:
+                            return 0
                 
-                    try:
-                        #Update berdasarkan status
-                        if status == 'Hadir':
-                            worksheet.update_cell(idx, 5, total_hadir + 1)  # Kolom E: Total Hadir
-                            worksheet.update_cell(idx, 8, 'Hadir')           # Kolom H: Status Terakhir
-                            logger.info(f"✅ Updated {student_name}: Hadir ({total_hadir + 1}x)")
-                        
-                        elif status == 'Alpha':
-                            worksheet.update_cell(idx, 6, total_alpha + 1)  # Kolom F: Total Alpha
-                            worksheet.update_cell(idx, 8, 'Alpha')
-                            logger.info(f"✅ Updated {student_name}: Alpha ({total_alpha + 1}x)")
-                        
-                        elif status == 'Izin':
-                            worksheet.update_cell(idx, 7, total_izin + 1)   # Kolom G: Total Izin
-                            worksheet.update_cell(idx, 8, 'Izin')
-                            logger.info(f"✅ Updated {student_name}: Izin ({total_izin + 1}x)")
-                    
-                        # Beri waktu singkat untuk update selesai
-                        import time
-                        time.sleep(1)
-                    
-                        logger.info(f"🎉 Successfully updated record for {student_name}: {status}")
-                        return True
-                    
-                    except Exception as update_error:
-                        logger.error(f"❌ Failed to update cells for {student_name}: {update_error}")
-                        return False
+                    total_hadir = safe_int(row[4])
+                    total_alpha = safe_int(row[5]) 
+                    total_izin = safe_int(row[6])
+                
+                    logger.info(f"📊 Current - Hadir: {total_hadir}, Alpha: {total_alpha}, Izin: {total_izin}")
+                
+                    # Tentukan update values
+                    updates = []
+                    if status == 'Hadir':
+                        updates.extend([
+                            (idx, 5, total_hadir + 1),  # Total Hadir
+                            (idx, 8, 'Hadir')           # Status Terakhir
+                        ])
+                    elif status == 'Alpha':
+                        updates.extend([
+                            (idx, 6, total_alpha + 1),  # Total Alpha
+                            (idx, 8, 'Alpha')           # Status Terakhir
+                        ])
+                    elif status == 'Izin':
+                        updates.extend([
+                            (idx, 7, total_izin + 1),   # Total Izin
+                            (idx, 8, 'Izin')            # Status Terakhir
+                        ])
+                
+                    # Execute all updates
+                    for row_idx, col_idx, value in updates:
+                        try:
+                            worksheet.update_cell(row_idx, col_idx, value)
+                            logger.debug(f"Updated cell ({row_idx}, {col_idx}) = {value}")
+                        except Exception as cell_error:
+                            logger.error(f"❌ Failed to update cell ({row_idx}, {col_idx}): {cell_error}")
+                            return False
+                
+                    # Small delay to ensure update completes
+                    import time
+                    time.sleep(0.5)
+                
+                    logger.info(f"🎉 Successfully updated {student_name} to {status}")
+                    return True
         
-            logger.warning(f"❌ Telegram ID {telegram_id} tidak ditemukan di spreadsheet")
+            logger.warning(f"❌ Telegram ID {telegram_id} not found")
             return False
         
         except Exception as e:
-            logger.error(f"💥 Critical error in update_student_record: {e}")
+            logger.error(f"💥 Critical error: {e}")
             return False
 
     def get_student_data_with_retry(self, max_retries=3):
@@ -888,6 +889,7 @@ class ClassroomAutoReminder:
         if self.reminder_thread:
             self.reminder_thread.join(timeout=5)
         return "❌ Reminder otomatis dihentikan"
+
 
 
 
