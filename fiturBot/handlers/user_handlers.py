@@ -236,43 +236,6 @@ async def absen(update: Update, context: ContextTypes.DEFAULT_TYPE):
     success = bot.update_student_record(user_id, status_absen.capitalize())
     
     if success:
-        if status_absen == 'hadir':
-            total_hadir_updated = total_hadir + 1
-            total_alpha_updated = total_alpha
-            total_izin_updated = total_izin
-
-        elif status_absen == 'alpha':
-            total_hadir_updated = total_hadir
-            total_alpha_updated = total_alpha + 1
-            total_izin_updated = total_izin
-
-        else:
-            total_hadir_updated = total_hadir 
-            total_alpha_updated = total_alpha
-            total_izin_updated = total_izin + 1
-
-        emoji = {
-            'hadir': '✅',
-            'izin': '⚠️', 
-            'alpha': '❌'
-        }
-
-        waktu_wib = get_wib_time().strftime('%d/%m/%Y %H:%M WIB')
-        
-        message = (
-            f"{emoji[status_absen]} **ABSENSI BERHASIL DICATAT**\n\n"
-            f"👤 **Nama:** {student_name}\n"
-            f"📝 **Status:** {status_absen.capitalize()}\n"
-            f"🕐 **Waktu:** {waktu_wib}\n\n"
-            f"📊 **Update Status:**\n"
-            f"• Total Hadir: {total_hadir_updated}x\n"
-            f"• Total Alpha: {total_alpha_updated}x\n"
-            f"• Total Izin: {total_izin_updated}x\n"
-            f"• Status Terakhir: {student_updated['Status Terakhir']}"
-        )
-
-        
-    elif success_2: 
         # Dapatkan data terbaru untuk konfirmasi
         df_updated = bot.get_student_data()
         student_updated = df_updated[df_updated['Telegram ID'] == user_id].iloc[0]
@@ -587,6 +550,7 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Contoh: `/register Andi Wijaya andi@gmail.com`",
             parse_mode='Markdown'
         )
+
 
 
 
