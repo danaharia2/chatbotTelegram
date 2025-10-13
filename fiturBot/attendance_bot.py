@@ -102,14 +102,20 @@ class AttendanceBot:
                     current_izin = int(row['Total Izin']) if pd.notna(row['Total Izin']) else 0
 
                 if status == 'Hadir':
-                        self.worksheet.update_cell(idx + 2, 5, current_hadir + 1)
-                        logger.info(f"✅ Updated Hadir for {row['Nama']}: {current_hadir} → {current_hadir + 1}")
+                    new_hadir = current_hadir + 1
+                    self.worksheet.update_cell(idx + 2, 5, new_hadir)
+                    self.worksheet.update_cell(idx + 2, 8, 'Hadir')
+                    logger.info(f"✅ Updated Hadir for {row['Nama']}: {current_hadir} → {new_hadir}")
                 elif status == 'Alpha':
-                        self.worksheet.update_cell(idx + 2, 6, current_alpha + 1)
-                        logger.info(f"✅ Updated Alpha for {row['Nama']}: {current_alpha} → {current_alpha + 1}")
+                    new_alpha = current_alpha + 1
+                    self.worksheet.update_cell(idx + 2, 6, new_alpha)
+                    self.worksheet.update_cell(idx + 2, 8, 'Alpha')
+                    logger.info(f"✅ Updated Alpha for {row['Nama']}: {current_alpha} → {new_alpha}")
                 elif status == 'Izin':
-                        self.worksheet.update_cell(idx + 2, 7, current_izin + 1)
-                        logger.info(f"✅ Updated Izin for {row['Nama']}: {current_izin} → {current_izin + 1}")
+                    new_izin = current_izin + 1
+                    self.worksheet.update_cell(idx + 2, 7, new_izin)
+                    self.worksheet.update_cell(idx + 2, 8, 'Izin')
+                    logger.info(f"✅ Updated Izin for {row['Nama']}: {current_izin} → {new_izin}")
 
                 logger.info(f"✅ Updated record for {row['Nama']}: {status}")
                 return True
@@ -180,7 +186,7 @@ class AttendanceBot:
         try:
             df = self.get_student_data()
             for idx, row in df.iterrows():
-                self.worksheet.update_cell(idx + 2, 6, 'Belum Absen')  # Reset status terakhir
+                self.worksheet.update_cell(idx + 2, 8, 'Belum Absen')  # Reset status terakhir
             logger.info("Status kehadiran harian direset")
         except Exception as e:
             logger.error(f"Error resetting attendance: {e}")
@@ -853,6 +859,7 @@ class ClassroomAutoReminder:
         if self.reminder_thread:
             self.reminder_thread.join(timeout=5)
         return "❌ Reminder otomatis dihentikan"
+
 
 
 
