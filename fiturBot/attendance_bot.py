@@ -109,7 +109,7 @@ class AttendanceBot:
                         self.worksheet.update_cell(idx + 2, 7, current_izin + 1)
 
                 logger.info(f"✅ Updated record for {row['Nama']}: {status}")
-                    return True
+                return True
             
             logger.warning(f"❌ Telegram ID {telegram_id} tidak ditemukan")
             return False
@@ -850,6 +850,7 @@ class ClassroomAutoReminder:
         if self.reminder_thread:
             self.reminder_thread.join(timeout=5)
         return "❌ Reminder otomatis dihentikan"
+
 
 
 
