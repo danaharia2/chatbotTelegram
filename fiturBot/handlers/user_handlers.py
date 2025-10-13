@@ -224,7 +224,7 @@ async def absen(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         # Konversi ke integer untuk data terbaru
         try:
-            total_hadir_updated = int(student_updated['Total Hadir'] if 'Total Hadir' in student_updated else 0
+            total_hadir_updated = int(student_updated['Total Hadir']) if 'Total Hadir' in student_updated else 0
             total_alpha_updated = int(student_updated['Total Alpha'])
             total_izin_updated = int(student_updated['Total Izin'])
             
@@ -501,6 +501,7 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Contoh: `/register Andi Wijaya andi@gmail.com`",
             parse_mode='Markdown'
         )
+
 
 
 
