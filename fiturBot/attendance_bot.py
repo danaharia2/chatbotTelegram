@@ -87,76 +87,37 @@ class AttendanceBot:
             return pd.DataFrame()
 
     def update_student_record(self, telegram_id, status):
-        """Update record kehadiran murid dengan batch update yang lebih efisien"""
+        """Update record kehadiran murid"""
         try:
-            worksheet = self.client.open_by_key(self.sheet_id).worksheet(self.sheet_name)
-            data = worksheet.get_all_values()
-        
-            logger.info(f"🔍 Searching for Telegram ID: {telegram_id}")
-        
-            # Cari baris berdasarkan Telegram ID
-            for idx, row in enumerate(data[1:], start=2):
-                if len(row) < 8:
-                    continue
-                
-                if row[1] == str(telegram_id):
-                    student_name = row[2] if len(row) > 2 else "Unknown"
-                    logger.info(f"📝 Found: {student_name} at row {idx}")
-                
-                    # Konversi nilai dengan safe function
-                    def safe_int(val):
-                        try:
-                            return int(val) if str(val).strip().isdigit() else 0
-                        except:
-                            return 0
-                
-                    total_hadir = safe_int(row[4])
-                    total_alpha = safe_int(row[5]) 
-                    total_izin = safe_int(row[6])
-                
-                    logger.info(f"📊 Current - Hadir: {total_hadir}, Alpha: {total_alpha}, Izin: {total_izin}")
-                
-                    # Tentukan update values
-                    updates = []
-                    if status == 'Hadir':
-                        updates.extend([
-                            (idx, 5, total_hadir + 1),  # Total Hadir
-                            (idx, 8, 'Hadir')           # Status Terakhir
-                        ])
-                    elif status == 'Alpha':
-                        updates.extend([
-                            (idx, 6, total_alpha + 1),  # Total Alpha
-                            (idx, 8, 'Alpha')           # Status Terakhir
-                        ])
-                    elif status == 'Izin':
-                        updates.extend([
-                            (idx, 7, total_izin + 1),   # Total Izin
-                            (idx, 8, 'Izin')            # Status Terakhir
-                        ])
-                
-                    # Execute all updates
-                    for row_idx, col_idx, value in updates:
-                        try:
-                            worksheet.update_cell(row_idx, col_idx, value)
-                            logger.debug(f"Updated cell ({row_idx}, {col_idx}) = {value}")
-                        except Exception as cell_error:
-                            logger.error(f"❌ Failed to update cell ({row_idx}, {col_idx}): {cell_error}")
-                            return False
-                
-                    # Small delay to ensure update completes
-                    import time
-                    time.sleep(0.5)
-                
-                    logger.info(f"🎉 Successfully updated {student_name} to {status}")
-                    return True
-        
-            logger.warning(f"❌ Telegram ID {telegram_id} not found")
-            return False
-        
-        except Exception as e:
-            logger.error(f"💥 Critical error: {e}")
-            return False
+            df = self.get_student_data()
+            if df.empty:
+                return False
 
+            for idx, row in df.iterrows():
+                if str(row['Telegram ID']) == str(telegram_id):
+                    # Update status terakhir
+                    self.worksheet.update_cell(idx + 2, 8, status)
+
+                if status == 'Hadir':
+                        current_hadir = int(row['Total Total']) if pd.notna(row['Total Hadir']) else 0
+                        self.worksheet.update_cell(idx + 2, 5, current_hadir + 1)
+                elif status == 'Alpha':
+                        current_alpha = int(row['Total Alpha']) if pd.notna(row['Total Alpha']) else 0
+                        self.worksheet.update_cell(idx + 2, 6, current_alpha + 1)
+                elif status == 'Izin':
+                        current_izin = int(row['Total Izin']) if pd.notna(row['Total Izin']) else 0
+                        self.worksheet.update_cell(idx + 2, 7, current_izin + 1)
+
+                logger.info(f"✅ Updated record for {row['Nama']}: {status}")
+                    return True
+            
+            logger.warning(f"❌ Telegram ID {telegram_id} tidak ditemukan")
+            return False
+            
+        except Exception as e:
+            logger.error(f"Error updating student record: {e}")
+            return False
+    
     def get_student_data_with_retry(self, max_retries=3):
         """Get student data dengan retry mechanism"""
         for attempt in range(max_retries):
@@ -889,6 +850,7 @@ class ClassroomAutoReminder:
         if self.reminder_thread:
             self.reminder_thread.join(timeout=5)
         return "❌ Reminder otomatis dihentikan"
+
 
 
 
