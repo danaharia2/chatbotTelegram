@@ -3,6 +3,8 @@ from telegram.ext import ContextTypes
 import logging
 from ..attendance_bot import AttendanceBot
 from config import ADMIN_IDS
+from datetime import datetime, timedelta
+from random
 
 logger = logging.getLogger(__name__)
 
@@ -145,7 +147,7 @@ async def materi2(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(message, parse_mode='HTML')
 
 async def absen(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handler untuk absen dengan pilihan status"""
+    """Handler untuk absen dengan pilihan status dan notifikasi Total Hadir"""
     user_id = update.effective_user.id
     bot = AttendanceBot()
     
@@ -169,9 +171,11 @@ async def absen(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Konversi ke integer untuk memastikan tipe data benar
     try:
+        total_hadir = int(student['Total Hadir']) if 'Total Hadir' in student else 0
         total_alpha = int(student['Total Alpha'])
         total_izin = int(student['Total Izin'])
     except (ValueError, TypeError):
+        total_hadir = 0
         total_alpha = 0
         total_izin = 0
     
@@ -184,10 +188,11 @@ async def absen(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "⚠️ `/absen izin` - Untuk izin tidak hadir\n"
             "❌ `/absen alpha` - Untuk tidak hadir\n\n"
             "💡 **Keterangan:**\n"
-            "• **Hadir**: Status terakhir berubah menjadi 'Hadir'\n"
+            "• **Hadir**: Total Hadir +1, Status menjadi 'Hadir'\n"
             "• **Izin**: Total Izin +1, Status menjadi 'Izin'\n"
             "• **Alpha**: Total Alpha +1, Status menjadi 'Alpha'\n\n"
             f"📊 **Status saat ini:**\n"
+            f"• Hadir: {total_hadir}x\n"
             f"• Alpha: {total_alpha}x\n"
             f"• Izin: {total_izin}x\n"
             f"• Status: {student['Status Terakhir']}",
@@ -219,9 +224,12 @@ async def absen(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         # Konversi ke integer untuk data terbaru
         try:
+            total_hadir_updated = int(student_updated['Total Hadir'] if 'Total Hadir' in student_updated else 0
             total_alpha_updated = int(student_updated['Total Alpha'])
             total_izin_updated = int(student_updated['Total Izin'])
+            
         except (ValueError, TypeError):
+            total_hadir_updated = total_hadir
             total_alpha_updated = total_alpha
             total_izin_updated = total_izin
         
@@ -237,10 +245,15 @@ async def absen(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"📝 **Status:** {status_absen.capitalize()}\n"
             f"🕐 **Waktu:** {update.message.date.strftime('%d/%m/%Y %H:%M')}\n\n"
             f"📊 **Update Status:**\n"
+            f"• Total Hadir: {total_hadir_updated}x\n"
             f"• Total Alpha: {total_alpha_updated}x\n"
             f"• Total Izin: {total_izin_updated}x\n"
             f"• Status Terakhir: {student_updated['Status Terakhir']}"
         )
+
+        # Kirim notifikasi ke grup jika status hadir
+        if status_absen == 'hadir':
+            await send_attendance_notification(context, user_id, student_name, total_hadir_updated)
         
         # Tambahkan peringatan jika perlu (dengan tipe data ya sudah di konversi)
         if status_absen == 'alpha':
@@ -254,6 +267,51 @@ async def absen(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "❌ **Gagal mencatat absensi!**\n"
             "Silakan coba lagi atau hubungi admin."
         )
+
+async def send_attendance_notification(context: ContextTypes.DEFAULT_TYPE, user_id: int, student_name: str, total_hadir: int):
+    """Mengirim notifikasi kehadiran ke grup dengan pantun lucu"""
+    # Dapatkan hari Senin minggu ini
+    today = datetime.now()
+    senin_minggu_ini = today - timedelta(days=today.weekday())
+
+    # Format tanggal
+    tanggal_str = senin_minggu_ini.strftime("%A tanggal %d %B %Y")
+    motivasi_list = [
+        "Semangat terus belajarnya! 💪",
+        "Langkah kecil setiap hari membawa hasil yang besar! 🌟",
+        "Belajar bahasa Rusia itu menyenangkan, bukan? 😄",
+        "Terus tingkatkan kemampuan bahasa Rusiamu! 🚀",
+        "Kehadiranmu sangat berarti untuk proses belajar! 📚"
+    ]
+    pantun_list = [
+        "Jalan-jalan ke pasar baru,\nBeli sepatu dan tas kanvas.\nJangan lupa absen hadir,\nBiar makin pinter bahasa Rusia! 🎒",
+        "Makan bakso di warung,\nBaksonya enak sekali.\nKalau rajin masuk kelas,\nBisa jadi translator yang hebat! 🍲",
+        "Lihat kucing manis sekali,\nKucingnya lagi tidur.\nJangan males datang ke kelas,\nBiar bisa baca buku Rusia! 😺",
+        "Pergi ke mall naik bus,\nBusnya penuh sesak.\nYang rajin hadir dapat bonus,\nBisa ngobrol sama Ivan dan Sasha! 🚌",
+        "Naik sepeda ke taman bunga,\nBunga mekar warna-warni.\nRajin hadir dapat pahala,\nNanti bisa jalan-jalan ke Moskwa! 🚴‍♀️",
+        "Siang-siang panas sekali,\nMinum es kelapa muda.\nJangan sampai alpha terus,\nNanti nilai jadi muda! 🥥"
+    ]
+    # Pilih random motivasi dan pantun
+    motivasi = random.choice(motivasi_list)
+    pantun = random.choice(pantun_list)
+
+    notification_message = (
+        f"🎉 **NOTIFIKASI KEHADIRAN** 🎉\n\n"
+        f"User ID {user_id} dan nama {student_name}\n"
+        f"Terima kasih telah hadir pada {tanggal_str}\n\n"
+        f"**{motivasi}**\n\n"
+        f"📈 **Total Kehadiran:** {total_hadir}x\n\n"
+        f"🎭 **Pantun Lucu:**\n{pantun}"
+    )
+    GROUP_CHAT_ID = -1002408972369
+    try:
+        await context.bot.send_message(
+            chat_id=GROUP_CHAT_ID,
+            text=notification_message
+    )
+        logger.info(f"Notifikasi kehadiran terkirim untuk {student_name}")
+    except Exception as e:
+        logger.error(f"Gagal mengirim notifikasi ke grup: {e}")
 
 async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handler untuk melihat status"""
@@ -269,9 +327,11 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         # Konversi ke integer untuk perhitungan
         try:
+            total_hadir = df['Total Hadir'].astype(int).sum() if 'Total Hadir' in df.columns else 0
             total_alpha = df['Total Alpha'].astype(int).sum()
             total_izin = df['Total Izin'].astype(int).sum()
         except (ValueError, TypeError):
+            total_hadir = 0
             total_alpha = 0
             total_izin = 0
             
@@ -280,6 +340,7 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
         stats_message = (
             "👑 **STATUS ADMIN**\n\n"
             f"• 👥 Total Murid: {total_students}\n"
+            f"• ✅ Total Hadir: {total_hadir}\n"
             f"• ❌ Total Alpha: {total_alpha}\n"
             f"• ⚠️ Total Izin: {total_izin}\n\n"
             "Gunakan /admin_stats untuk info lebih detail\n"
@@ -294,8 +355,8 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if student_data.empty:
         await update.message.reply_text(
             "❌ **Anda belum terdaftar dalam sistem kehadiran.**\n\n"
-            "Gunakan `/register NamaLengkap` untuk mendaftar.\n"
-            "Contoh: `/register Andi Wijaya`",
+            "Gunakan `/register NamaLengkap EmailAnda` untuk mendaftar.\n"
+            "Contoh: `/register Andi Wijaya andi@gmail.com`",
             parse_mode='Markdown'
         )
         return
@@ -304,15 +365,18 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Konversi ke integer
     try:
+        total_hadir = int(student['Total Hadir']) if 'Total Hadir' in student else 0
         total_alpha = int(student['Total Alpha'])
         total_izin = int(student['Total Izin'])
     except (ValueError, TypeError):
+        total_hadir = 0
         total_alpha = 0
         total_izin = 0
     
     message = (
         f"📊 **STATUS KEHADIRAN**\n\n"
         f"👤 **Nama:** {student['Nama']}\n"
+        f"• ✅ Total Hadir: {total_hadir}\n"
         f"❌ **Total Alpha:** {total_alpha}x\n"
         f"⚠️ **Total Izin:** {total_izin}x\n"
         f"📝 **Status Terakhir:** {student['Status Terakhir']}"
@@ -407,7 +471,7 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         # Tambahkan ke spreadsheet
         try:
-            new_row = [nama, user.id, email, f"@{user.username}" if user.username else "-", 0, 0, "Belum Absen", "Auto-registered"]
+            new_row = [nama, user.id, email, f"@{user.username}" if user.username else "-", 0, 0, 0, "Belum Absen", "Auto-registered"]
             bot.worksheet.append_row(new_row)
             
             confirmation_msg = (
@@ -437,6 +501,7 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Contoh: `/register Andi Wijaya andi@gmail.com`",
             parse_mode='Markdown'
         )
+
 
 
 
