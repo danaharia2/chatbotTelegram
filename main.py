@@ -92,15 +92,16 @@ def main():
             
             # Add quiz command handlers
             quiz_commands = [
-                ("quiz_help", quiz_help),
-                ("create_quiz", create_quiz),
-                ("list_quizzes", list_quizzes),
-                ("start_quiz", start_quiz),
-                ("next_question", next_question),
-                ("finish_quiz", finish_quiz),
-                ("quiz_leaderboard", quiz_leaderboard),
-                ("my_quiz_stats", my_quiz_stats),
-            ]
+                 ("quiz_help", quiz_help),
+                 ("create_quiz", create_quiz),
+                 ("list_quizzes", list_quizzes),
+                 ("start_quiz", start_quiz),
+                 ("continue_quiz", continue_quiz),
+                 ("my_score", my_score),
+                 ("quiz_leaderboard", quiz_leaderboard),
+                 ("my_quiz_stats", my_quiz_stats),
+                 ("quiz_status", quiz_status),
+             ]
             
             for command, handler in quiz_commands:
                 application.add_handler(CommandHandler(command, handler))
@@ -148,6 +149,7 @@ def main():
 
 if __name__ == '__main__':
     main()
+
 
 
 
