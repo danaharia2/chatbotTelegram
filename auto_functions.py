@@ -1,14 +1,15 @@
 import logging
 from telegram.ext import ContextTypes
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from fiturBot.attendance_bot import AttendanceBot
 from fiturBot.handlers.topic_utils import send_to_announcement_topic, send_to_assignment_topic
 from config import GROUP_CHAT_ID, GOOGLE_MEET_LINK
 from config import ANNOUNCEMENT_TOPIC_ID, TOPIC_NAMES, ASSIGNMENT_TOPIC_ID, ATTENDANCE_TOPIC_ID
 
 
-
 logger = logging.getLogger(__name__)
+
+WIB = timezone(timedelta(hours=7))
 
 async def auto_check_attendance(context: ContextTypes.DEFAULT_TYPE):
     """Fungsi otomatis untuk mengecek dan mengeluarkan murid"""
@@ -90,7 +91,7 @@ async def send_class_reminder(context: ContextTypes.DEFAULT_TYPE):
     """Mengirim reminder kelas hari Senin ke topik PENGUMUMAN & INFO"""
     try:
         # Dapatkan tanggal Senin ini dan Senin depan
-        today = datetime.now()
+        today = datetime.now(WIB)
 
         # Cek apakah hari ini Senin (0 = Monday, 6 = Sunday)
         is_monday = today.weekday() == 0
@@ -160,5 +161,6 @@ Have a nice day & спасибо! 🌟"""
 async def periodic_check(context: ContextTypes.DEFAULT_TYPE):
     """Pengecekan periodik"""
     await auto_check_attendance(context)
+
 
 
