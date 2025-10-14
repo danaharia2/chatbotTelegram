@@ -97,14 +97,17 @@ def main():
             
             # Add quiz command handlers
             quiz_commands = [
-                 ("quiz_help", quiz_help),
-                 ("create_quiz", create_quiz),
-                 ("list_quizzes", list_quizzes),
-                 ("start_quiz", start_quiz),
-                 ("next_question", next_question),
-                 ("quiz_leaderboard", quiz_leaderboard),
-                 ("my_quiz_stats", my_quiz_stats),
-                 ("finish_quiz", finish_quiz),
+                 ("quiz", quiz),
+                 ("help", quiz_help),
+                 ("mulai", start_quiz),
+                 ("nyerah", surrender_quiz),
+                 ("next", next_question),
+                 ("skor", show_score),
+                 ("poin", show_points),
+                 ("topskor", top_score),
+                 ("aturan", quiz_rules),
+                 ("donasi", quiz_donate),
+                 ("lapor", quiz_report),
              ]
             
             for command, handler in quiz_commands:
@@ -117,10 +120,9 @@ def main():
             ), group=1)
             logger.info("✅ Added quiz message handler")
             
-            # Add callback query handler for quiz
-            application.add_handler(CallbackQueryHandler(handle_quiz_callback, pattern="^quiz_"))
+            application.add_handler(CallbackQueryHandler(quiz_callback_handler, pattern="^quiz_"))
             logger.info("✅ Added quiz callback handler")
-            
+        
         except Exception as e:
             logger.error(f"❌ Error setting up quiz handlers: {e}")
         
@@ -153,6 +155,7 @@ def main():
 
 if __name__ == '__main__':
     main()
+
 
 
 
