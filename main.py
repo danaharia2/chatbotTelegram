@@ -71,7 +71,7 @@ def main():
                 ("stop_reminder", stop_auto_reminder),
                 ("test_reminder", test_auto_reminder),
                 ("get_all_member", get_all_member_ids),
-                ("simple_ids", get_simple_member_ids),
+                ("get_ids", get_simple_member_ids),
             ]
             
             for command, handler in commands:
@@ -152,6 +152,7 @@ def main():
 
 if __name__ == '__main__':
     main()
+
 
 
 
