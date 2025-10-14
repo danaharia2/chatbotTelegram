@@ -261,7 +261,7 @@ async def list_kehadiran(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"{chr(10).join(daftar_siswa)}\n\n"
             f"**💫 KATA MOTIVASI:**\n"
             f"{motivasi}\n\n"
-            f"**🎭 PANTUN LUCU:**\n"
+            f"**🎭 PANTUN:**\n"
             f"{pantun}\n\n"
             f"━━━━━━━━━━━━━━━━━━━━━━━━\n"
             f"📅 *Waktu sistem:* {get_wib_time().strftime('%d/%m/%Y %H:%M WIB')}\n"
@@ -740,6 +740,7 @@ async def get_simple_member_ids(update: Update, context: ContextTypes.DEFAULT_TY
     except Exception as e:
         logger.error(f"Error in get_simple_member_ids: {e}")
         await update.message.reply_text(f"❌ Error: {str(e)}")
+
 
 
 
