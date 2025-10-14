@@ -40,7 +40,7 @@ def main():
                 start, status, test_connection, get_my_info, register, absen, test_classroom,
                 admin_help, admin_stats, reset_attendance, force_attendance_check, export_data,
                 manual_kick, list_warnings, list_kehadiran, classroom_reminder_now, class_reminder_now, check_topics, 
-                materi, materi1, materi2, start_auto_reminder, stop_auto_reminder, test_auto_reminder
+                materi, materi1, materi2, start_auto_reminder, stop_auto_reminder, test_auto_reminder, materi3
             )
             
             # Add command handlers
@@ -54,6 +54,7 @@ def main():
                 ("materi", materi),
                 ("materi1", materi1),
                 ("materi2", materi2),
+                ("materi3", materi3),
                 ("admin_help", admin_help),
                 ("admin_stats", admin_stats),
                 ("reset_attendance", reset_attendance),
@@ -149,6 +150,7 @@ def main():
 
 if __name__ == '__main__':
     main()
+
 
 
 
