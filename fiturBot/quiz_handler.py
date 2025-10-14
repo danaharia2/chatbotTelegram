@@ -203,7 +203,7 @@ async def quiz_help_command(update, context):
     else:
         await update.message.reply_text(help_text)
 
-async def start_quiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def quiz_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     chat_id = update.effective_chat.id
     
