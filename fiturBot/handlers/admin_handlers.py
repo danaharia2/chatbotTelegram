@@ -201,7 +201,7 @@ async def list_kehadiran(update: Update, context: ContextTypes.DEFAULT_TYPE):
             7: "Juli", 8: "Agustus", 9: "September", 10: "Oktober", 11: "November", 12: "Desember"
         }
         
-        tanggal_str = f"Senin tanggal {senin_minggu_ini.day} {bulan_indonesia[senin_minggu_ini.month]} {senin_minggu_ini.year}"
+        tanggal_str = f"Senin, {senin_minggu_ini.day} {bulan_indonesia[senin_minggu_ini.month]} {senin_minggu_ini.year}"
 
         # Filter siswa yang hadir (status terakhir = 'Hadir')
         siswa_hadir = df[df['Status Terakhir'] == 'Hadir']
@@ -252,7 +252,7 @@ async def list_kehadiran(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Buat pesan
         message = (
             f"🎉 **LAPORAN KEHADIRAN KELAS** 🎉\n\n"
-            f"Terima kasih atas kehadiran murid-murid yang telah hadir di kelas pada {tanggal_str}\n\n"
+            f"Terima kasih atas kehadiran teman-teman yang telah hadir di kelas pada {tanggal_str}\n\n"
             f"**📊 DATA KEHADIRAN:**\n"
             f"• Total yang hadir: {len(siswa_hadir)} murid\n"
             f"• Persentase kehadiran: {(len(siswa_hadir) / len(df) * 100):.1f}%\n\n"
@@ -582,6 +582,7 @@ async def classroom_reminder_now(update: Update, context: ContextTypes.DEFAULT_T
     except Exception as e:
         logger.error(f"Error in classroom reminder: {e}")
         await update.message.reply_text(f"❌ Error: {str(e)}")
+
 
 
 
