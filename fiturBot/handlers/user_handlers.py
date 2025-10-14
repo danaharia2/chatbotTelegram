@@ -195,28 +195,28 @@ async def materi3(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "• Директор - Direktur\n"
         "• Секретарь - Sekretaris\n\n"
 
-        "<b>👥 KATA GANTI ORANG (Местоимения):</b>
-        "• <b>Я</b> - Saya
-        "• <b>Ты</b> - Kamu (informal)
-        "• <b>Он</b> - Dia (laki-laki)
-        "• <b>Она</b> - Dia (perempuan)
-        "• <b>Они</b> - Mereka
-        "• <b>Вы</b> - Anda (formal) / Kalian
-        "• <b>Мы</b> - Kami/Kita
+        "<b>👥 KATA GANTI ORANG (Местоимения):</b>\n"
+        "• <b>Я</b> - Saya\n"
+        "• <b>Ты</b> - Kamu (informal)\n"
+        "• <b>Он</b> - Dia (laki-laki)\n"
+        "• <b>Она</b> - Dia (perempuan)\n"
+        "• <b>Они</b> - Mereka\n"
+        "• <b>Вы</b> - Anda (formal) / Kalian\n"
+        "• <b>Мы</b> - Kami/Kita\n\n"
 
         "<b>💬 POLA KALIMAT:</b>\n"
         "1. <b>Ini adalah...</b>\n"
-           "\"Это Антон. Он врач." (Ini Anton. Dia dokter.)\n"
-           "\"Это Анна. Она студентка." (Ini Anna. Dia murid.)\n\n"
+           ""Это Антон. Он врач." (Ini Anton. Dia dokter.)\n"
+           ""Это Анна. Она студентка." (Ini Anna. Dia murid.)\n\n"
 
         "2. <b>Kalimat tanya:</b>\n"
-           "\"Кто это?" - Siapa ini?\n"
-           "\"Он/Она ...?" - Apakah dia (laki/perempuan)...?\n\n"
+           f""Кто это?" - Siapa ini?\n"
+           f""Он/Она ...?" - Apakah dia (laki/perempuan)...?\n\n"
 
         "<b>🎭 CONTOH DIALOG:</b>\n"
-        "• \"Кто это?\" - \"Это Алексей. Он бизнесмен.\"\n"
-        "• \"Извините, вы директор?\" - "Нет, я секретарь.\"\n"
-        "• \"Вы студенты?\" - \"Да, мы студенты.\"\n\n"
+        "• "Кто это?" - "Это Алексей. Он бизнесмен."\n"
+        "• "Извините, вы директор?" - "Нет, я секретарь."\n"
+        "• "Вы студенты?" - "Да, мы студенты."\n\n"
 
         "<b>📚 KOSAKATA TAMBAHAN:</b>\n"
         "• Стетоскоп - Stetoskop\n"
@@ -604,6 +604,7 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Contoh: `/register Andi Wijaya andi@gmail.com`",
             parse_mode='Markdown'
         )
+
 
 
 
