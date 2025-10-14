@@ -6,8 +6,9 @@ import asyncio
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes, CommandHandler, CallbackQueryHandler, MessageHandler, filters
 from config import ADMIN_IDS
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
+WIB = timezone(timedelta(hours=7))
 logger = logging.getLogger(__name__)
 
 # State management untuk quiz
@@ -28,8 +29,16 @@ class Question:
 def initialize_sample_questions():
     sample_questions = [
         Question(
-            "Sebutkan bagian tubuh wanita yang paling disukai cowok?",
-            ["bibir", "dada", "mata", "rambut", "paha", "pantat", "pipi", "leher"]
+            "Sebutkan apa saja huruf jebakan?",
+            ["С", "Р", "В", "Х", "У", "Е", "Н"]
+        ),
+        Question(
+            "Sebutkan 2 tanda bunyi dalam Bahasa Rusia?",
+            ["Ъ", "Ь"]
+        ),
+        Question(
+            "Aktivitas orang gabut?",
+            ["merusuh", "baca buku", "main game", "nonton", "tidur"]
         ),
         Question(
             "Sebutkan kota besar di Indonesia?",
@@ -43,7 +52,7 @@ def initialize_sample_questions():
     questions_db.extend(sample_questions)
 
 # Format waktu seperti di screenshot (HH:MM)
-def format_time():
+def format_time(WIB):
     return datetime.now().strftime("%H:%M")
 
 # Command /quiz - Menu utama quiz
