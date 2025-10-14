@@ -12,7 +12,7 @@ WIB = timezone(timedelta(hours=7))
 
 logger = logging.getLogger(__name__)
 
-# State management untuk quiz
+# State management untuk quis
 quiz_sessions = {}  # {chat_id: session_data}
 user_scores = {}    # {user_id: score}
 questions_db = []   # List of Question objects
