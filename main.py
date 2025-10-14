@@ -88,9 +88,10 @@ def main():
         # Import dan setup quiz handlers
         try:
             from fiturBot.quiz_handler import (
-                quiz_help, create_quiz, list_quizzes, start_quiz, next_question, 
-                finish_quiz, quiz_leaderboard, my_quiz_stats, handle_quiz_callback,
-                handle_quiz_message,
+                quiz, quiz_callback_handler, handle_quiz_message,
+                quiz_help, start_quiz, surrender_quiz, next_question, 
+                show_score, show_points, top_score, quiz_rules, 
+                quiz_donate, quiz_report, create_question_start
             )
             from telegram.ext import CallbackQueryHandler
             
@@ -152,6 +153,7 @@ def main():
 
 if __name__ == '__main__':
     main()
+
 
 
 
