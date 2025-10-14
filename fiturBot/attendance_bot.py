@@ -140,16 +140,16 @@ class AttendanceBot:
                 total_izin = int(student['Total Izin']) if pd.notna(student['Total Izin']) else 0
                 nama = student['Nama']
                 
-                # Kick: Alpha dan Izin 3 kali
-                if total_alpha >= 3 or total_izin >=3:
+                # Kick: Alpha atau Izin 4 kali
+                if total_alpha >= 3 or total_izin >=4:
                     students_to_kick.append({
                         'telegram_id': telegram_id,
                         'nama': nama,
                         'alasan': f"Alpha {total_alpha} kali"
                     })
                 
-                # Peringatan: Izin 2 kali dan Alpha 2 kali
-                if total_izin >= 2 or total_alpha >= 2:
+                # Peringatan: Izin 3 kali dan Alpha 2 kali
+                if total_izin >= 3 or total_alpha >= 2:
                     students_to_warn.append({
                         'telegram_id': telegram_id,
                         'nama': nama,
@@ -842,6 +842,7 @@ class ClassroomAutoReminder:
         if self.reminder_thread:
             self.reminder_thread.join(timeout=5)
         return "❌ Reminder otomatis dihentikan"
+
 
 
 
