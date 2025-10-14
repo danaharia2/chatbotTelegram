@@ -114,6 +114,8 @@ async def quiz_callback_handler(update: Update, context: ContextTypes.DEFAULT_TY
         await quiz_donate_callback(query, context)
     elif callback_data == "quiz_report":
         await quiz_report_callback(query, context)
+    elif callback_data.startswith("quiz_stay_"):
+        await stay_callback(query, context)
     elif callback_data == "quiz_create":
         if user_id in ADMIN_IDS:
             await create_question_start_callback(query, context)
@@ -153,6 +155,10 @@ async def quiz_report_callback(query, context):
 
 async def create_question_start_callback(query, context):
     await create_question_start(query, context)
+
+async def stay_callback(query, context):
+    # Hapus pesan pemberitahuan
+    await query.message.delete()
 
 # Command handlers individual
 async def quiz_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -243,6 +249,7 @@ async def start_quiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Tampilkan pesan bahwa quiz sedang berlangsung dengan tombol
         keyboard = [
             [InlineKeyboardButton("🏃 Menyerah", callback_data="quiz_surrender")],
+            [InlineKeyboardButton("Tetap Stay", callback_data=f"quiz_stay_{update.message.message_id}")],
             [InlineKeyboardButton("➡️ Pertanyaan Berikutnya", callback_data="quiz_next")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
