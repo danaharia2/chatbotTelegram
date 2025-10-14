@@ -238,6 +238,21 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def start_quiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     
+    # Cek jika sudah ada session aktif
+    if chat_id in quiz_sessions and quiz_sessions[chat_id].get('current_question_answers') is not None:
+        # Tampilkan pesan bahwa quiz sedang berlangsung dengan tombol
+        keyboard = [
+            [InlineKeyboardButton("🏃 Menyerah", callback_data="quiz_surrender")],
+            [InlineKeyboardButton("➡️ Pertanyaan Berikutnya", callback_data="quiz_next")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
+        await update.message.reply_text(
+            "❓ Quiz sedang berlangsung. Apa yang ingin Anda lakukan?",
+            reply_markup=reply_markup
+        )
+        return
+        
     if not questions_db:
         initialize_sample_questions()
     
@@ -546,7 +561,15 @@ async def handle_quiz_message(update: Update, context: ContextTypes.DEFAULT_TYPE
                 
                 # Update pesan pertanyaan (tanpa kirim notifikasi terpisah)
                 await update_quiz_message(context, chat_id, session)
-                
+
+                # Kirim pesan konfirmasi sebagai reply ke pesan user
+                confirmation_msg = await update.message.reply_text(
+                    f"✅ {user_name} menjawab: {correct_answer} (+1 poin)",
+                    reply_to_message_id=update.message.message_id
+                )
+                await asyncio.sleep(2)
+                await confirmation_msg.delete()
+    
                 # Cek jika semua jawaban sudah ditemukan
                 if len(session['current_question_answers']) == len(question.correct_answers):
                     # Tunggu sebentar sebelum pindah ke pertanyaan berikutnya
