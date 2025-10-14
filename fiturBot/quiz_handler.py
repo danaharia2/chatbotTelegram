@@ -10,27 +10,54 @@ import asyncio
 logger = logging.getLogger(__name__)
 
 # State management untuk quiz
-quiz_sessions = {}
+group_quiz_sessions = {}
 user_scores = {}
 questions_db = []
 
 # Struktur data untuk pertanyaan
 class Question:
-    def __init__(self, question, answer, options=None):
+    def __init__(self, question, correct_answer, options=None):
         self.question = question
-        self.answer = answer
-        self.options = options or []
+        self.correct_answer = correct_answer
+        self.options = options
         self.created_by = None
 
 # Inisialisasi beberapa pertanyaan contoh
 def initialize_sample_questions():
     sample_questions = [
-        Question("Apa warna langit pada siang hari?", "biru", ["merah", "kuning", "hijau", "biru"]),
-        Question("2 + 2 = ?", "4", ["3", "4", "5", "6"]),
-        Question("Ibu kota Indonesia?", "jakarta", ["bandung", "surabaya", "jakarta", "medan"]),
+        Question(
+            "2 + 2 = ?",
+            "4",
+            ["3", "4", "5", "6", "7", "8"]
+        ),
+        Question(
+            "Apa warna langit pada siang hari?",
+            "biru", 
+            ["merah", "kuning", "hijau", "biru", "ungu", "hitam"]
+        ),
+        Question(
+            "Ibu kota Indonesia?",
+            "jakarta",
+            ["bandung", "surabaya", "jakarta", "medan", "yogyakarta", "semarang"]
+        ),
     ]
     questions_db.extend(sample_questions)
 
+def format_question(question, answered_options=None):
+    if answered_options is None:
+        answered_options = {}
+    question_text = f"**{question.question}**\n\n"
+
+    for i, option in enumerate(question.options, 1):
+        if i in answered_options:
+            user_name = answered_options[i]['user_name']
+            question_text += f"{i}. {option} (+1) [{user_name}]\n"
+
+        else:
+            question_text += f"{i}. ______\n"
+    
+    return question_text
+    
 # Fungsi untuk setup bot commands (menu)
 async def setup_bot_commands(application):
     """Setup bot commands menu"""
@@ -126,16 +153,13 @@ async def quiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [InlineKeyboardButton("📊 Skor Saya", callback_data="quiz_score")],
         [InlineKeyboardButton("🏆 Top Skor", callback_data="quiz_topscore")],
         [InlineKeyboardButton("📚 Aturan", callback_data="quiz_rules")],
+        [InlineKeyboardButton("❤️ Donasi", callback_data="quiz_donate")],
+        [InlineKeyboardButton("⚠️ Laporkan", callback_data="quiz_report")],
     ]
     
     # Hanya admin yang bisa melihat tombol buat pertanyaan
     if user_id in ADMIN_IDS:
         keyboard.append([InlineKeyboardButton("✏️ Buat Pertanyaan", callback_data="quiz_create")])
-    
-    keyboard.extend([
-        [InlineKeyboardButton("❤️ Donasi", callback_data="quiz_donate")],
-        [InlineKeyboardButton("⚠️ Laporkan", callback_data="quiz_report")]
-    ])
     
     reply_markup = InlineKeyboardMarkup(keyboard)
     
@@ -204,72 +228,87 @@ async def quiz_help_command(update, context):
         await update.message.reply_text(help_text)
 
 async def start_quiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
     chat_id = update.effective_chat.id
-    
+    user = update.effective_user
+
+    # Cek jika chat adalah grup
+    if update.effective_chat.type not in ['group', 'supergroup']:
+        await update.message.reply_text("❌ Quiz hanya bisa dimulai di grup!")
+        return
+        
     if not questions_db:
         initialize_sample_questions()
-    
-    # Inisialisasi session user
-    if user_id not in quiz_sessions:
-        quiz_sessions[user_id] = {
-            'current_question_index': 0,
-            'score': 0,
+
+    # Inisialisasi sesi quiz untuk grup
+    if chat_id not in group_quiz_sessions:
+        group_quiz_sessions[chat_id] = {
+            'active': True,
+            'current_question_index': random.randint(0, len(questions_db) - 1),
+            'answered_options': {},  # {option_number: {'user_id': x, 'user_name': y}}
             'start_time': time.time(),
-            'answered_questions': set()
+            'message_id': None
         }
-    
-    session = quiz_sessions[user_id]
-    
-    # Cari pertanyaan yang belum dijawab
-    available_questions = [i for i in range(len(questions_db)) if i not in session['answered_questions']]
-    
-    if not available_questions:
-        await update.message.reply_text("🎉 Selamat! Anda telah menyelesaikan semua pertanyaan!")
-        return
-    
-    question_index = random.choice(available_questions)
-    session['current_question_index'] = question_index
-    question = questions_db[question_index]
-    
-    # Format pertanyaan seperti di screenshot
-    question_text = f"**{question.question}**\n\n"
-    
-    if question.options:
-        for i, option in enumerate(question.options, 1):
-            question_text += f"{i}. {option}\n"
-    
-    await update.message.reply_text(question_text)
 
+    session = group_quiz_sessions[chat_id]
+    question = questions_db[session['current_question_index']]
+
+    # Kirim pertanyaan
+    question_text = format_question(question)
+    message = await update.message.reply_text(
+        question_text,
+        parse_mode='Markdown'
+    )
+
+    # Simpan ID pesan untuk update nanti
+    session['message_id'] = message.message_id
+    session['active'] = True
+    
 async def surrender_quiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    
-    if user_id in quiz_sessions:
-        score = quiz_sessions[user_id]['score']
-        del quiz_sessions[user_id]
-        await update.message.reply_text(f"😔 Anda menyerah! Skor akhir: {score}")
+    chat_id = update.effective_chat.id
+
+    if chat_id in group_quiz_sessions:
+        group_quiz_sessions[chat_id]['active'] = False
+        await update.message.reply_text("🏳️ Quiz dihentikan!")
     else:
-        await update.message.reply_text("ℹ️ Tidak ada game yang aktif.")
-
+        await update.message.reply_text("ℹ️ Tidak ada quiz yang aktif.")
+        
 async def next_question(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    
-    if user_id not in quiz_sessions:
-        await update.message.reply_text("❌ Tidak ada game yang aktif. Gunakan /mulai untuk memulai.")
-        return
-    
-    await start_quiz(update, context)
+    chat_id = update.effective_chat.id
 
+    if chat_id not in group_quiz_sessions:
+        await update.message.reply_text("❌ Tidak ada quiz yang aktif!")
+        return
+
+    session = group_quiz_sessions[chat_id]
+    
+    # Pilih pertanyaan acak berikutnya
+    available_questions = [i for i in range(len(questions_db)) if i != session['current_question_index']]
+    if not available_questions:
+        # Reset jika semua pertanyaan sudah digunakan
+        available_questions = list(range(len(questions_db)))
+
+    session['current_question_index'] = random.choice(available_questions)
+    session['answered_options'] = {}
+    question = questions_db[session['current_question_index']]
+    question_text = format_question(question)
+
+    try:
+        message = await context.bot.send_message(
+            chat_id=chat_id,
+            text=question_text,
+            parse_mode='Markdown'
+        )
+        session['message_id'] = message.message_id
+
+    except Exception as e:
+        logger.error(f"Error sending next question: {e}")
+        await update.message.reply_text("❌ Gagal memuat pertanyaan berikutnya")
+        
 async def show_score(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
-    
-    if user_id in quiz_sessions:
-        score = quiz_sessions[user_id]['score']
-        await update.message.reply_text(f"📊 Skor saat ini: {score}")
-    else:
-        await update.message.reply_text("ℹ️ Tidak ada game yang aktif.")
-
-async def show_points(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    score = user_scores.get(user_id, 0)
+    await update.message.reply_text(f"📊 Skor Anda: {score}")
+   usernamedef show_points(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     points = user_scores.get(user_id, 0)
     await update.message.reply_text(f"⭐ Poin Anda: {points}")
@@ -285,7 +324,7 @@ async def top_score(update: Update, context: ContextTypes.DEFAULT_TYPE):
     for i, (user_id, score) in enumerate(top_users, 1):
         try:
             user = await context.bot.get_chat(user_id)
-            username = user.username or user.first_name
+            username = f"@{user.username}" if user.username else user.first_name
         except:
             username = f"User_{user_id}"
         
@@ -344,59 +383,120 @@ async def create_question_start(update: Update, context: ContextTypes.DEFAULT_TY
     # Set state untuk menunggu input pertanyaan
     context.user_data['waiting_for_question'] = True
 
+async def handle_question_creation(update: Update, context: ContextTypes.DEFAULT_TYPE, text: str):
+    try:
+        parts = text.split('|')
+        if len(parts) >= 3:
+            question_text = parts[0].strip()
+            correct_answer = parts[1].strip()
+            options = [opt.strip() for opt in parts[2:8]]  # Maksimal 6 opsi
+
+            if correct_answer not in options:
+                await update.message.reply_text("❌ Jawaban benar harus ada dalam opsi!")
+                return
+                
+            new_question = Question(question_text, correct_answer, options)
+            new_question.created_by = update.effective_user.id
+            questions_db.append(new_question)
+
+            await update.message.reply_text("✅ Pertanyaan berhasil ditambahkan!")
+        else:
+            await update.message.reply_text("❌ Format salah! Minimal: Pertanyaan|Jawaban|Opsi1|Opsi2")
+
+    except Exception as e:
+        await update.message.reply_text(f"❌ Error: {str(e)}")
+    
+    context.user_data['waiting_for_question'] = False
+
 # Handler untuk menerima pesan teks (jawaban quiz dan pembuatan pertanyaan)
 async def handle_quiz_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
     user_id = update.effective_user.id
-    text = update.message.text.strip()
+    user_name = update.effective_user.first_name
+    text = update.message.text.strip().lower()
     
     # Cek jika user sedang membuat pertanyaan (admin only)
     if context.user_data.get('waiting_for_question') and user_id in ADMIN_IDS:
-        try:
-            parts = text.split('|')
-            if len(parts) >= 2:
-                question_text = parts[0].strip()
-                answer = parts[1].strip()
-                options = [opt.strip() for opt in parts[2:6]] if len(parts) > 2 else []
-                
-                new_question = Question(question_text, answer, options)
-                new_question.created_by = user_id
-                questions_db.append(new_question)
-                
-                await update.message.reply_text("✅ Pertanyaan berhasil ditambahkan!")
-            else:
-                await update.message.reply_text("❌ Format salah! Gunakan: Pertanyaan|Jawaban|Opsi1|Opsi2|Opsi3|Opsi4")
-        
-        except Exception as e:
-            await update.message.reply_text(f"❌ Error: {str(e)}")
-        
-        context.user_data['waiting_for_question'] = False
+        await handle_question_creation(update, context, text)
         return
-    
-    # Cek jika user sedang bermain quiz
-    if user_id in quiz_sessions:
-        session = quiz_sessions[user_id]
-        current_index = session['current_question_index']
-        
-        if current_index < len(questions_db):
-            question = questions_db[current_index]
-            
-            # Check answer (case insensitive)
-            if text.lower() == question.answer.lower():
-                session['score'] += 1
-                user_scores[user_id] = user_scores.get(user_id, 0) + 1
-                session['answered_questions'].add(current_index)
-                
-                await update.message.reply_text(
-                    f"✅ Benar! +1 poin\n"
-                    f"Skor: {session['score']}"
-                )
-                
-                # Auto next question setelah 2 detik
-                await context.bot.send_chat_action(chat_id=update.effective_chat.id, action='typing')
-                await asyncio.sleep(2)
-                await start_quiz(update, context)
-            else:
-                await update.message.reply_text("❌ Salah! Coba lagi.")
 
-# Inisialisasi questions saat module di-load
+    if chat_id not in group_quiz_sessions or not group_quiz_sessions[chat_id]['active']:
+        return
+                                       
+    session = group_quiz_sessions[chat_id]
+    question = questions_db[session['current_question_index']]
+    
+    # Cek jika jawaban benar
+    if text == question.correct_answer.lower():
+        # Cari nomor opsi yang sesuai dengan jawaban
+        option_number = None
+        for i, option in enumerate(question.options, 1):
+            if option.lower() == text:
+                option_number = i
+                break
+
+        if option_number and option_number not in session['answered_options']:
+            # Tambahkan ke jawaban yang sudah dijawab
+            session['answered_options'][option_number] = {
+                'user_id': user_id,
+                'user_name': user_name
+            }
+            # Update skor user
+            user_scores[user_id] = user_scores.get(user_id, 0) + 1
+            
+            # Update pesan pertanyaan
+            question_text = format_question(question, session['answered_options'])
+            try:
+                await context.bot.edit_message_text(
+                    chat_id=chat_id,
+                    message_id=session['message_id'],
+                    text=question_text,
+                    parse_mode='Markdown'
+                )
+            except Exception as e:
+                logger.error(f"Error updating message: {e}")
+
+            # Kirim konfirmasi
+            await update.message.reply_text(
+                f"✅ @{user_name} benar! +1 poin\n"
+                f"Total poin: {user_scores[user_id]}"
+            )
+            # Cek jika semua opsi sudah terjawab atau sudah ada yang benar
+            # Lanjut ke soal berikutnya setelah delay
+            await asyncio.sleep(3)
+            await next_question(update, context)
+
+        # Cek jika user mencoba menjawab dengan nomor opsi
+    elif text.isdigit():
+        option_num = int(text)
+        if 1 <= option_num <= len(question.options):
+            option_text = question.options[option_num - 1].lower()
+            if option_text == question.correct_answer.lower():
+                # Jawaban benar via nomor opsi
+                if option_num not in session['answered_options']:
+                    session['answered_options'][option_num] = {
+                        'user_id': user_id,
+                        'user_name': user_name
+                    }
+                    
+                    user_scores[user_id] = user_scores.get(user_id, 0) + 1
+                    question_text = format_question(question, session['answered_options'])
+                    try:
+                        await context.bot.edit_message_text(
+                            chat_id=chat_id,
+                            message_id=session['message_id'],
+                            text=question_text,
+                            parse_mode='Markdown'
+                        )
+                    except Exception as e:
+                        logger.error(f"Error updating message: {e}")
+                    
+                    await update.message.reply_text(
+                        f"✅ @{user_name} benar! +1 poin\n"
+                        f"Total poin: {user_scores[user_id]}"
+                    )
+                    await asyncio.sleep(3)
+                    await next_question(update, context)
+
+# Inisialisasi
 initialize_sample_questions()
