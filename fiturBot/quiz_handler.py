@@ -28,18 +28,15 @@ class Question:
 def initialize_sample_questions():
     sample_questions = [
         Question(
-            "Sebutkan apa saja huruf jebakan?",
-            ["Х", "В", "С", "Р", "У", "Е", "Н"],
-            ["Х", "Х", "С", "Р", "У", "Е", "Н"]
+            "Sebutkan bagian tubuh wanita yang paling disukai cowok?",
+            ["bibir", "dada", "mata", "rambut", "paha", "pantat", "pipi", "leher"]
         ),
         Question(
             "Sebutkan kota besar di Indonesia?",
-            ["jakarta", "surabaya", "bandung", "medan", "makassar", "semarang", "palembang", "depok"],
             ["jakarta", "surabaya", "bandung", "medan", "makassar", "semarang", "palembang", "depok"]
         ),
         Question(
             "Sebutkan warna pelangi?",
-            ["merah", "jingga", "kuning", "hijau", "biru", "nila", "ungu"],
             ["merah", "jingga", "kuning", "hijau", "biru", "nila", "ungu"]
         ),
     ]
@@ -170,66 +167,8 @@ async def quiz_help_command(update, context):
     else:
         await update.message.reply_text(help_text)
 
-async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handler untuk /start - menampilkan pesan welcome dengan menu"""
-    welcome_text = (
-        "🤖 **Bot Tebak-Tebakan**\n\n"
-        "Halo, ayo kita main tebak-tebakan. Kamu bisa tambahkan bot ini ke grup kamu.\n\n"
-        "**Gunakan menu commands atau ketik perintah:**\n"
-        "• /mulai - mulai game tebak-tebakan\n"
-        "• /help - bantuan dan panduan\n"
-        "• /aturan - aturan bermain\n"
-        "• /quiz - menu interaktif\n"
-        "• /donasi - dukung bot ini\n\n"
-        "Selamat bermain! 🎮"
-    )
-    
-    # Tambahkan inline keyboard untuk akses cepat
-    keyboard = [
-        [InlineKeyboardButton("🎮 Mulai Game", callback_data="quiz_start")],
-        [InlineKeyboardButton("📖 Bantuan", callback_data="quiz_help")],
-        [InlineKeyboardButton("📚 Aturan", callback_data="quiz_rules")],
-    ]
-    
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    
-    await update.message.reply_text(welcome_text, reply_markup=reply_markup)
-
-async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handler untuk /help - menampilkan pesan bantuan lengkap seperti di screenshot"""
-    help_text = (
-        "🤖 **Bot Tebak-Tebakan**\n\n"
-        "Halo, ayo kita main tebak-tebakan. Kamu bisa tambahkan bot ini ke grup kamu.\n\n"
-        "**Perintah yang tersedia:**\n\n"
-        "**Memulai Bot**\n"
-        "/start\n\n"
-        "**Membuka pesan bantuan**\n" 
-        "/help\n\n"
-        "**Memulai permainan**\n"
-        "/mulai\n\n"
-        "**Menyerah dari pertanyaan**\n"
-        "/nyerah\n\n"
-        "**Pertanyaan berikutnya**\n"
-        "/next\n\n"
-        "**Melihat skor saat ini**\n"
-        "/skor\n\n"
-        "**Melihat poin kamu**\n"
-        "/poin\n\n"
-        "**Melihat 10 pemain teratas**\n"
-        "/topskor\n\n"
-        "**Melihat aturan bermain**\n"
-        "/aturan\n\n"
-        "**Dukungan untuk bot**\n"
-        "/donasi\n\n"
-        "**Laporkan pertanyaan**\n"
-        "/lapor"
-    )
-    
-    await update.message.reply_text(help_text)
-    
 async def start_quiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
-    user_id = update.effective_user.id
     
     if not questions_db:
         initialize_sample_questions()
@@ -277,26 +216,38 @@ async def format_question_text(question, session, chat_id):
     """Format teks pertanyaan seperti di screenshot"""
     question_text = f"**{question.question}**\n\n"
     
-    # Buat daftar jawaban kosong
-    for i in range(len(question.correct_answers)):
-        answer_found = False
-        for answer, user_data in session['current_question_answers'].items():
-            if answer.lower() in [a.lower() for a in question.correct_answers]:
-                # Cek jika ini jawaban yang sesuai dengan urutan
-                correct_answers_lower = [a.lower() for a in question.correct_answers]
-                if answer.lower() == correct_answers_lower[i]:
-                    user_name = user_data['user_name']
-                    question_text += f"{i+1}. {answer} (+1) [{user_name}]\n"
-                    answer_found = True
-                    break
-        
-        if not answer_found:
+    # Buat daftar jawaban sesuai urutan correct_answers
+    for i, correct_answer in enumerate(question.correct_answers):
+        # Cek apakah jawaban ini sudah dijawab
+        if correct_answer in session['current_question_answers']:
+            user_data = session['current_question_answers'][correct_answer]
+            user_name = user_data['user_name']
+            question_text += f"{i+1}. {correct_answer} (+1) [{user_name}]\n"
+        else:
             question_text += f"{i+1}. ______\n"
     
     # Tambahkan waktu current
-    question_text += f"\n{format_time()}"
+    current_time = format_time()
+    question_text += f"\n{current_time}"
     
     return question_text
+
+async def update_quiz_message(context: ContextTypes.DEFAULT_TYPE, chat_id: int, session: dict):
+    """Update pesan quiz dengan jawaban terbaru"""
+    try:
+        question_index = session['current_question_index']
+        question = questions_db[question_index]
+        
+        question_text = await format_question_text(question, session, chat_id)
+        
+        await context.bot.edit_message_text(
+            chat_id=chat_id,
+            message_id=session['message_id'],
+            text=question_text,
+            parse_mode='Markdown'
+        )
+    except Exception as e:
+        logger.error(f"Error updating quiz message: {e}")
 
 async def surrender_quiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
@@ -377,6 +328,7 @@ async def quiz_rules(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "6. Gunakan /nyerah jika ingin menyerah\n"
         "7. Skor akan disimpan secara global\n"
         "8. Bisa dimainkan di grup maupun private chat\n"
+        "9. Semua anggota grup bisa menjawab pertanyaan yang sama\n"
     )
     await update.message.reply_text(rules_text)
 
@@ -524,36 +476,22 @@ async def handle_quiz_message(update: Update, context: ContextTypes.DEFAULT_TYPE
                 # Update user score
                 user_scores[user_id] = user_scores.get(user_id, 0) + 1
                 
-                # Update pesan pertanyaan
-                question_text = await format_question_text(question, session, chat_id)
-                
-                try:
-                    await context.bot.edit_message_text(
-                        chat_id=chat_id,
-                        message_id=session['message_id'],
-                        text=question_text,
-                        parse_mode='Markdown'
-                    )
-                except Exception as e:
-                    logger.error(f"Error updating message: {e}")
-                
-                # Kirim pesan konfirmasi
-                await update.message.reply_text(f"✅ {user_name} menjawab: {correct_answer} (+1 poin)")
+                # Update pesan pertanyaan (tanpa kirim notifikasi terpisah)
+                await update_quiz_message(context, chat_id, session)
                 
                 # Cek jika semua jawaban sudah ditemukan
                 if len(session['current_question_answers']) == len(question.correct_answers):
+                    # Tunggu sebentar sebelum pindah ke pertanyaan berikutnya
+                    await asyncio.sleep(2)
                     await update.message.reply_text(
                         f"🎉 Selamat! Semua jawaban sudah ditemukan!\n"
                         f"Gunakan /next untuk pertanyaan berikutnya."
                     )
             
             else:
-                # Jawaban salah atau sudah dijawab
-                if any(text.lower() == ans.lower() for ans in session['current_question_answers'].keys()):
-                    await update.message.reply_text(f"❌ {user_name}, jawaban '{text}' sudah dijawab sebelumnya!")
-                else:
-                    # Optional: beri tahu jika jawaban salah
-                    pass
+                # Jawaban salah atau sudah dijawab - tidak perlu beri feedback
+                # Biarkan user terus mencoba tanpa gangguan notifikasi
+                pass
 
 # Inisialisasi questions saat module di-load
 initialize_sample_questions()
