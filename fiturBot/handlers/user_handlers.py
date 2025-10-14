@@ -115,6 +115,7 @@ async def materi1(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "• <b>Очень приятно!</b> (Ochen' priyatno!) = Senang bertemu dengan Anda!\n\n"
         
         "🔜 Gunakan /materi2 untuk melanjutkan ke materi berikutnya"
+        "🏠 Gunakan /materi untuk kembali ke menu utama"
     )
     await update.message.reply_text(message, parse_mode='HTML')
     
@@ -155,7 +156,7 @@ async def materi2(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "• <b>Pola Kalimat:</b> <code>..., спасибо. А у тебя?</code> (..., terima kasih. Dan kamu?)\n\n"
 
         "🔙 Gunakan /materi1 untuk mengulang materi sebelumnya\n"
-        "➡️ Gunakan /materi3 untuk melanjutkan ke materi berikutnya\n"
+        "🔜 Gunakan /materi3 untuk melanjutkan ke materi berikutnya\n"
         "🏠 Gunakan /materi untuk kembali ke menu utama materi"
     )
     await update.message.reply_text(message, parse_mode='HTML')
@@ -608,6 +609,7 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Contoh: `/register Andi Wijaya andi@gmail.com`",
             parse_mode='Markdown'
         )
+
 
 
 
