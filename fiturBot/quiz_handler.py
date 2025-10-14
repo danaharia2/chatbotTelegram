@@ -328,6 +328,11 @@ async def top_score(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     await update.message.reply_text(leaderboard)
 
+async def show_points(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    points = user_scores.get(user_id, 0)
+    await update.message.reply_text(f"⭐ Poin Anda: {points}")
+
 async def quiz_rules(update: Update, context: ContextTypes.DEFAULT_TYPE):
     rules_text = (
         "📚 **Aturan Bermain**\n\n"
