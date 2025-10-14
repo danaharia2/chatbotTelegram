@@ -396,7 +396,7 @@ async def next_question(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     
     if chat_id not in quiz_sessions:
-        if isinstance(update, Update):
+        if hasattr(update, Update):
             await update.message.reply_text("❌ Tidak ada game yang aktif. Gunakan /mulai untuk memulai.")
         else:
             await update.message.reply_text("❌ Tidak ada game yang aktif. Gunakan /mulai untuk memulai.")
@@ -609,22 +609,33 @@ async def handle_quiz_message(update: Update, context: ContextTypes.DEFAULT_TYPE
                     f"✅ {user_name} menjawab: {correct_answer} (+1 poin)",
                     reply_to_message_id=update.message.message_id
                 )
-                await asyncio.sleep(2)
-                await confirmation_msg.delete()
-    
+                
                 # Cek jika semua jawaban sudah ditemukan
                 if len(session['current_question_answers']) == len(question.correct_answers):
                     # Tunggu sebentar sebelum pindah ke pertanyaan berikutnya
                     await asyncio.sleep(2)
-                    await update.message.reply_text(
-                        f"🎉 Selamat! Semua jawaban sudah ditemukan!\n"
-                        f"Gunakan /next untuk pertanyaan berikutnya."
-                    )
+                    # Auto-next ke pertanyaan berikutnya
+                    session['answered_questions'].add(session['current_question_index'])
+                    await start_quiz(update, context)
             
             else:
                 # Jawaban salah atau sudah dijawab - tidak perlu beri feedback
-                # Biarkan user terus mencoba tanpa gangguan notifikasi
                 pass
 
-# Inisialisasi questions saat module di-load
+def is_current_question_complete(chat_id):
+    """Cek apakah pertanyaan saat ini sudah selesai (semua jawaban ditemukan)"""
+
+    if chat_id not in quiz_sessions:
+        return False
+    
+    session = quiz_sessions[chat_id]
+    question_index = session['current_question_index']
+
+    if question_index >= len(questions_db):
+        return False
+    
+    question = questions_db[question_index]
+    return len(session['current_question_answers']) == len(question.correct_answers)
+
+
 initialize_sample_questions()
