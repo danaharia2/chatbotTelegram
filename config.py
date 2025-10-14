@@ -5,6 +5,7 @@ import base64
 import json
 import sys
 import logging
+from telegram import BotCommand, BotCommandScopeChat
 
 logger = logging.getLogger(__name__)
 
@@ -116,6 +117,34 @@ TOPIC_NAMES = {
     3: "PENGUMUMAN & INFO",
     4: "Perihal Absensi Kelas"
 }
+
+def setup_admin_commands(application, admin_ids):
+    """Setup commands khusus untuk admin"""
+    
+    admin_commands = [
+        BotCommand("start", "Memulai Bot"),
+        BotCommand("help", "Membuka pesan bantuan"),
+        BotCommand("quiz", "Menu utama tebak-tebakan"),
+        BotCommand("mulai", "Memulai permainan"),
+        BotCommand("nyerah", "Menyerah dari pertanyaan"),
+        BotCommand("next", "Pertanyaan berikutnya"),
+        BotCommand("skor", "Melihat skor saat ini"),
+        BotCommand("poin", "Melihat poin kamu"),
+        BotCommand("topskor", "Melihat 10 pemain teratas"),
+        BotCommand("aturan", "Melihat aturan bermain"),
+        BotCommand("donasi", "Dukungan untuk bot"),
+        BotCommand("lapor", "Laporkan pertanyaan"),
+        BotCommand("buat", "Buat pertanyaan (Admin)"),  # Hanya ada di menu admin
+    ]
+    
+    for admin_id in admin_ids:
+        try:
+            application.bot.set_my_commands(
+                admin_commands,
+                scope=BotCommandScopeChat(admin_id)
+            )
+        except Exception as e:
+            logger.warning(f"⚠️ Could not set admin commands for {admin_id}: {e}")
 
 # ==================== CREDENTIALS HANDLING ====================
 def setup_credentials():
@@ -282,3 +311,4 @@ if __name__ == "__main__":
     validate_config()
 else:
     config_valid = validate_config()
+
