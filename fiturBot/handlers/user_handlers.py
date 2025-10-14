@@ -78,7 +78,8 @@ async def materi(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "📚 **RANGKUMAN MATERI PEMBELAJARAN BAHASA RUSIA**\n\n"
         "Pilih materi yang ingin dipelajari:\n\n"
         "📖 /materi1 - Pengenalan Huruf & Frasa Dasar\n"
-        "🎯 /materi2 - Bunyi Huruf, Penekanan, & Menanyakan Kabar\n\n"
+        "🎯 /materi2 - Bunyi Huruf, Penekanan, & Menanyakan Kabar\n"
+        "🥋 /materi3 - Profesi, Huruf Sirilik Baru, dan Kata Ganti\n\n"
         "💡 Tips Belajar:\n"
         "• Pelajari secara bertahap\n"
         "• Praktekkan pengucapan\n"
@@ -155,6 +156,79 @@ async def materi2(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         "🔙 Gunakan /materi1 untuk mengulang materi sebelumnya\n"
         "🏠 Gunakan /materi untuk kembali ke menu utama materi"
+    )
+    await update.message.reply_text(message, parse_mode='HTML')
+
+async def materi3(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Materi 3: Profesi, Huruf Sirilik Baru, dan Kata Ganti"""
+    
+    message = (
+        "<b> MATERI 3: PROFESI, HURUF SIRILIK BARU, DAN KATA GANTI</b>\n\n"
+
+        "<b>🎯 TUJUAN PEMBELAJARAN:</b>\n"
+        "• Mengenali beberapa profesi dalam bahasa Rusia\n"
+        "• Memahami huruf Sirilik baru: X, Φ, И, У\n"
+        "• Memahami huruf vokal gabungan: я (й+a), ё (й+o), ю (й+y), е (й+э)\n"
+        "• Membentuk kalimat tanya: "Кто это?" (Siapa ini?)\n\n"
+
+        "<b>🔤 HURUF SIRILIK BARU:</b>\n"
+        "• <b>X x</b> - Bunyi "kh" seperti dalam kata "хлеб" (roti)\n"
+        "• <b>Φ φ</b> - Bunyi "f" seperti dalam kata "фото" (foto)\n"
+        "• <b>И и</b> - Bunyi "i" seperti dalam kata "икра" (telur ikan)\n\n"
+
+        "<b>🌟 HURUF VOKAL GABUNGAN:</b>\n"
+        "<b> Й (и краткое) => cara i kratkaye <b>\n"
+        "Huruf И pendek yang membentuk vokal gabungan:\n"
+        "• <b>Я</b> = й + a (contoh: мясо - daging)\n"
+        "• <b>Ё</b> = й + o (contoh: мёд - madu)\n"
+        "• <b>Е</b> = й + э (contoh: хлеб - roti)\n"
+        "• <b>Ю</b> = й + у (contoh: юбка - rok)\n\n"
+
+        "<b>💼 KOSAKATA PROFESI:</b>\n"
+        "• Врач - Dokter\n"
+        "• Студе́нт - Murid (laki-laki)\n"
+        "• Студентка - Murid (perempuan)\n"
+        "• Води́тель - Supir\n"
+        "• По́вар - Juru masak\n"
+        "• Рыба́к - Nelayan\n"
+        "• Фото́граф - Fotografer\n"
+        "• Бизнесмен - Pengusaha\n"
+        "• Директор - Direktur\n"
+        "• Секретарь - Sekretaris\n\n"
+
+        "<b>👥 KATA GANTI ORANG (Местоимения):</b>
+        "• <b>Я</b> - Saya
+        "• <b>Ты</b> - Kamu (informal)
+        "• <b>Он</b> - Dia (laki-laki)
+        "• <b>Она</b> - Dia (perempuan)
+        "• <b>Они</b> - Mereka
+        "• <b>Вы</b> - Anda (formal) / Kalian
+        "• <b>Мы</b> - Kami/Kita
+
+        "<b>💬 POLA KALIMAT:</b>\n"
+        "1. <b>Ini adalah...</b>\n"
+           "\"Это Антон. Он врач." (Ini Anton. Dia dokter.)\n"
+           "\"Это Анна. Она студентка." (Ini Anna. Dia murid.)\n\n"
+
+        "2. <b>Kalimat tanya:</b>\n"
+           "\"Кто это?" - Siapa ini?\n"
+           "\"Он/Она ...?" - Apakah dia (laki/perempuan)...?\n\n"
+
+        "<b>🎭 CONTOH DIALOG:</b>\n"
+        "• \"Кто это?\" - \"Это Алексей. Он бизнесмен.\"\n"
+        "• \"Извините, вы директор?\" - "Нет, я секретарь.\"\n"
+        "• \"Вы студенты?\" - \"Да, мы студенты.\"\n\n"
+
+        "<b>📚 KOSAKATA TAMBAHAN:</b>\n"
+        "• Стетоскоп - Stetoskop\n"
+        "• Кни́га - Buku\n"
+        "• Маши́на - Mobil\n"
+        "• Мя́со - Daging\n"
+        "• Икра́ - Telur ikan\n"
+        "• Фо́то - Foto\n\n"
+
+        "🔙 Gunakan /materi2 untuk mengulang materi sebelumnya\n"
+        "🏠 Gunakan /materi untuk kembali ke menu utama"
     )
     await update.message.reply_text(message, parse_mode='HTML')
 
@@ -531,6 +605,7 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Contoh: `/register Andi Wijaya andi@gmail.com`",
             parse_mode='Markdown'
         )
+
 
 
 
