@@ -145,7 +145,7 @@ class AttendanceBot:
                     students_to_kick.append({
                         'telegram_id': telegram_id,
                         'nama': nama,
-                        'alasan': f"Alpha {total_alpha} kali"
+                        'alasan': f"Alpha {total_alpha}x atau Izin {total_izin}x"
                     })
                 
                 # Peringatan: Izin 3 kali dan Alpha 2 kali
@@ -842,6 +842,7 @@ class ClassroomAutoReminder:
         if self.reminder_thread:
             self.reminder_thread.join(timeout=5)
         return "❌ Reminder otomatis dihentikan"
+
 
 
 
