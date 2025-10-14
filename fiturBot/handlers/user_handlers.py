@@ -177,7 +177,7 @@ async def materi3(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "• <b>У у</b> - Bunyi \"u\" seperti dalam \"улица\" (jalan)\n\n"
         
         "<b>🌟 Huruf Vokal Gabungan:</b>\n"
-        "<b> Й (и краткое) dibaca i kratkaye <b>\n"
+        "<b>Й (и краткое) dibaca i kratkaye <b>\n"
         "• <b>Я</b> = й + a (contoh: <b>мясо</b> - daging)\n"
         "• <b>Ё</b> = й + o (contoh: <b>мёд</b> - madu)\n"
         "• <b>Е</b> = й + э (contoh: <b>хлеб</b> - roti)\n"
@@ -608,6 +608,7 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Contoh: `/register Andi Wijaya andi@gmail.com`",
             parse_mode='Markdown'
         )
+
 
 
 
