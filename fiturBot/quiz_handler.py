@@ -133,8 +133,23 @@ async def surrender_quiz_callback(query, context):
     await surrender_quiz(query, context)
 
 async def next_question_callback(query, context):
-    await next_question(query, context)
+    chat_id = query.message.chat.id
 
+    # Cek apakah pertanyaan saat ini sudah selesai
+    if chat_id in quiz_sessions and is_current_question_complete(chat_id):
+        # Jika sudah selesai, langsung next tanpa konfirmasi
+        class MockUpdate:
+            def __init__(self, query):
+                self.effective_chat = query.message.chat
+                self.effective_user = query.from_user
+                self.message = query.message
+                
+        mock_update = MockUpdate(query)
+        await next_question(mock_update, context)
+    else:
+        # Jika belum selesai, tampilkan konfirmasi
+        await query.answer("Pertanyaan belum selesai! Jawab semua dulu ya~")
+    
 async def show_score_callback(query, context):
     await show_score(query, context)
 
@@ -245,21 +260,39 @@ async def start_quiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     
     # Cek jika sudah ada session aktif
-    if chat_id in quiz_sessions and quiz_sessions[chat_id].get('current_question_answers') is not None:
-        # Tampilkan pesan bahwa quiz sedang berlangsung dengan tombol
-        keyboard = [
-            [InlineKeyboardButton("🏃 Menyerah", callback_data="quiz_surrender")],
-            [InlineKeyboardButton("Tetap Stay", callback_data=f"quiz_stay_{update.message.message_id}")],
-            [InlineKeyboardButton("➡️ Pertanyaan Berikutnya", callback_data="quiz_next")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-
-        await update.message.reply_text(
-            "❓ Quiz sedang berlangsung. Apa yang ingin Anda lakukan?",
-            reply_markup=reply_markup
-        )
-        return
+    if chat_id in quiz_sessions:
+        session = quiz_sessions[chat_id]
+        question_index = session['current_question_index']
+        question = questions_db[question_index]
         
+        # Cek apakah pertanyaan saat ini sudah selesai (semua jawaban sudah dijawab)
+        is_question_complete = len(session['current_question_answers']) == len(question.correct_answers)
+        if not is_question_complete:
+            # Tampilkan pesan bahwa quiz sedang berlangsung dengan tombol
+            keyboard = [
+                [InlineKeyboardButton("🏃 Menyerah", callback_data="quiz_surrender")],
+                [InlineKeyboardButton("Tetap Stay", callback_data=f"quiz_stay_{update.message.message_id}")],
+            ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        if isinstance(update, Update):
+            message = await update.message.reply_text(
+                    "❓ Quiz sedang berlangsung. Apa yang ingin Anda lakukan?",
+                    reply_markup=reply_markup
+            )
+        else:
+            message = await update.message.reply_text(
+                    "❓ Quiz sedang berlangsung. Apa yang ingin Anda lakukan?",
+                    reply_markup=reply_markup 
+            )
+
+        # Simpan message_id untuk bisa dihapus nanti
+        context.user_data['notification_message_id'] = message.message_id
+        return
+
+    else:
+        # Jika pertanyaan sudah selesai, lanjutkan ke pertanyaan berikutnya
+        session['answered_questions'].add(session['current_question_index'])
+                    
     if not questions_db:
         initialize_sample_questions()
     
@@ -279,9 +312,11 @@ async def start_quiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
     available_questions = [i for i in range(len(questions_db)) if i not in session['answered_questions']]
     
     if not available_questions:
-        await update.message.reply_text("🎉 Selamat! Anda telah menyelesaikan semua pertanyaan!")
-        return
-    
+        session['answered_questions'] = set()
+        available_questions = [i for i in range(len(questions_db))]
+
+        await update.message.reply_text("🎉 Semua pertanyaan sudah dijawab! Mengulang dari awal...")
+            
     # Pilih pertanyaan secara acak
     question_index = random.choice(available_questions)
     session['current_question_index'] = question_index
