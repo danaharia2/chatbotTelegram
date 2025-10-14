@@ -59,6 +59,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "• `/reset_attendance confirm` - Reset semua data\n"
             "• `/manual_kick 123456789 Alpha 3x` - Kick murid\n"
             "• Gunakan `/force_check` untuk tes auto-kick\n"
+            "• /get_members - Dapatkan data lengkap semua member grup\n"
+            "• /get_ids - Dapatkan hanya ID member (lebih cepat)\n"
             "/quiz_help - Melihat info tentang quiz\n"
             )
         
@@ -609,6 +611,7 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Contoh: `/register Andi Wijaya andi@gmail.com`",
             parse_mode='Markdown'
         )
+
 
 
 
