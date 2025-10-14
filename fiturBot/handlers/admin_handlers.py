@@ -255,7 +255,7 @@ async def list_kehadiran(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"🎉 **LAPORAN KEHADIRAN KELAS** 🎉\n\n"
             f"Terima kasih atas kehadiran teman-teman yang telah hadir di kelas pada {tanggal_str}\n\n"
             f"**📊 DATA KEHADIRAN:**\n"
-            f"• Total yang hadir: {len(siswa_hadir)} murid dari {total_siswa} murid\n"
+            f"• Total yang hadir: {len(siswa_hadir)} dari {total_siswa} murid\n"
             f"• Persentase kehadiran: {(len(siswa_hadir) / len(df) * 100):.1f}%\n\n"
             f"**👥 DAFTAR MURID YANG HADIR:**\n"
             f"{chr(10).join(daftar_siswa)}\n\n"
@@ -583,6 +583,7 @@ async def classroom_reminder_now(update: Update, context: ContextTypes.DEFAULT_T
     except Exception as e:
         logger.error(f"Error in classroom reminder: {e}")
         await update.message.reply_text(f"❌ Error: {str(e)}")
+
 
 
 
