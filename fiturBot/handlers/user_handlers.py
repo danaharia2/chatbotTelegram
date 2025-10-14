@@ -159,77 +159,83 @@ async def materi2(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     await update.message.reply_text(message, parse_mode='HTML')
 
-async def materi3(update: Update, context: ContextTypes.DEFAULT_TYPE):
+def materi3():
     """Materi 3: Profesi, Huruf Sirilik Baru, dan Kata Ganti"""
-    message = (
-        "🥋 <b> MATERI 3: PROFESI, HURUF SIRILIK BARU, DAN KATA GANTI</b>\n\n"
+    
+    materi = """
+    <b>📚 MATERI 3: PROFESI, HURUF SIRILIK BARU, DAN KATA GANTI</b>
 
-        "<b>🎯 TUJUAN PEMBELAJARAN:</b>\n"
-        "• Mengenali beberapa profesi dalam bahasa Rusia\n"
-        "• Memahami huruf Sirilik baru: X, Φ, И, У\n"
-        "• Memahami huruf vokal gabungan: я (й+a), ё (й+o), ю (й+y), е (й+э)\n"
-        "• Membentuk kalimat tanya: "Кто это?" (Siapa ini?)\n\n"
+    <b>🎯 TUJUAN PEMBELAJARAN:</b>
+    • Mengenali beberapa profesi dalam bahasa Rusia
+    • Memahami huruf Sirilik baru: X, Φ, И, У
+    • Memahami huruf vokal gabungan: я (й+a), ё (й+o), ю (й+y), е (й+э)
+    • Membentuk kalimat tanya: "Кто это?" (Siapa ini?)
 
-        "<b>🔤 HURUF SIRILIK BARU:</b>\n"
-        "• <b>X x</b> - Bunyi "kh" seperti dalam kata "хлеб" (roti)\n"
-        "• <b>Φ φ</b> - Bunyi "f" seperti dalam kata "фото" (foto)\n"
-        "• <b>И и</b> - Bunyi "i" seperti dalam kata "икра" (telur ikan)\n\n"
+    <b>🔤 HURUF SIRILIK BARU:</b>
+    • <b>X x</b> - Bunyi "kh" seperti dalam kata "хлеб" (roti)
+    • <b>Φ φ</b> - Bunyi "f" seperti dalam kata "фото" (foto)
+    • <b>И и</b> - Bunyi "i" seperti dalam kata "икра" (telur ikan)
 
-        "<b>🌟 HURUF VOKAL GABUNGAN:</b>\n"
-        "<b> Й (и краткое) => cara i kratkaye <b>\n"
-        "Huruf И pendek yang membentuk vokal gabungan:\n"
-        "• <b>Я</b> = й + a (contoh: мясо - daging)\n"
-        "• <b>Ё</b> = й + o (contoh: мёд - madu)\n"
-        "• <b>Е</b> = й + э (contoh: хлеб - roti)\n"
-        "• <b>Ю</b> = й + у (contoh: юбка - rok)\n\n"
+    <b>🌟 HURUF VOKAL GABUNGAN:</b>
+    Й (и краткое)
+    Huruf И pendek yang membentuk vokal gabungan:
+    • <b>Я</b> = й + a (contoh: мясо - daging)
+    • <b>Ё</b> = й + o (contoh: мёд - madu) 
+    • <b>Е</b> = й + э (contoh: хлеб - roti)
+    • <b>Ю</b> = й + у (contoh: юбка - rok)
 
-        "<b>💼 KOSAKATA PROFESI:</b>\n"
-        "• Врач - Dokter\n"
-        "• Студе́нт - Murid (laki-laki)\n"
-        "• Студентка - Murid (perempuan)\n"
-        "• Води́тель - Supir\n"
-        "• По́вар - Juru masak\n"
-        "• Рыба́к - Nelayan\n"
-        "• Фото́граф - Fotografer\n"
-        "• Бизнесмен - Pengusaha\n"
-        "• Директор - Direktur\n"
-        "• Секретарь - Sekretaris\n\n"
+    <b>💼 KOSAKATA PROFESI:</b>
+    • Врач - Dokter
+    • Студент - Murid (laki-laki)
+    • Студентка - Murid (perempuan)
+    • Водитель - Supir
+    • Повар - Juru masak
+    • Рыбак - Nelayan
+    • Фотограф - Fotografer
+    • Бизнесмен - Pengusaha
+    • Директор - Direktur
+    • Секретарь - Sekretaris
 
-        "<b>👥 KATA GANTI ORANG (Местоимения):</b>\n"
-        "• <b>Я</b> - Saya\n"
-        "• <b>Ты</b> - Kamu (informal)\n"
-        "• <b>Он</b> - Dia (laki-laki)\n"
-        "• <b>Она</b> - Dia (perempuan)\n"
-        "• <b>Они</b> - Mereka\n"
-        "• <b>Вы</b> - Anda (formal) / Kalian\n"
-        "• <b>Мы</b> - Kami/Kita\n\n"
+    <b>👥 KATA GANTI ORANG (Местоимения):</b>
+    • <b>Я</b> - Saya
+    • <b>Ты</b> - Kamu (informal)
+    • <b>Он</b> - Dia (laki-laki)
+    • <b>Она</b> - Dia (perempuan)
+    • <b>Они</b> - Mereka
+   • <b>Вы</b> - Anda (formal) / Kalian
+   • <b>Мы</b> - Kami/Kita
 
-        "<b>💬 POLA KALIMAT:</b>\n"
-        "1. <b>Ini adalah...</b>\n"
-           ""Это Антон. Он врач." (Ini Anton. Dia dokter.)\n"
-           ""Это Анна. Она студентка." (Ini Anna. Dia murid.)\n\n"
+   <b>💬 POLA KALIMAT:</b>
+   1. <b>Ini adalah...</b>
+      "Это Антон. Он врач." (Ini Anton. Dia dokter.)
+      "Это Анна. Она студентка." (Ini Anna. Dia murid.)
 
-        "2. <b>Kalimat tanya:</b>\n"
-           f""Кто это?" - Siapa ini?\n"
-           f""Он/Она ...?" - Apakah dia (laki/perempuan)...?\n\n"
+   2. <b>Kalimat tanya:</b>
+      "Кто это?" - Siapa ini?
+      "Он/Она ...?" - Apakah dia (laki/perempuan)...?
 
-        "<b>🎭 CONTOH DIALOG:</b>\n"
-        "• "Кто это?" - "Это Алексей. Он бизнесмен."\n"
-        "• "Извините, вы директор?" - "Нет, я секретарь."\n"
-        "• "Вы студенты?" - "Да, мы студенты."\n\n"
+    <b>🎭 CONTOH DIALOG:</b>
+    • "Кто это?" - "Это Алексей. Он бизнесмен."
+    • "Извините, вы директор?" - "Нет, я секретарь."
+    • "Вы студенты?" - "Да, мы студенты."
 
-        "<b>📚 KOSAKATA TAMBAHAN:</b>\n"
-        "• Стетоскоп - Stetoskop\n"
-        "• Кни́га - Buku\n"
-        "• Маши́на - Mobil\n"
-        "• Мя́со - Daging\n"
-        "• Икра́ - Telur ikan\n"
-        "• Фо́то - Foto\n\n"
+    <b>📝 TUGAS RUMAH:</b>
+    1. Tulis 5 kata baru (contoh: хлеб, фото, яблоко)
+    2. Foto 3 benda di rumah, tulis kalimat "Это..." dalam Sirilik
+    3. Pelajari huruf: Г, Ц, Ч, Ь, Ъ
 
-        "🔙 Gunakan /materi2 untuk mengulang materi sebelumnya\n"
-        "🏠 Gunakan /materi untuk kembali ke menu utama"
-    )
-    await update.message.reply_text(message, parse_mode='HTML')
+    <b>📚 KOSAKATA TAMBAHAN:</b>
+    • Стетоскоп - Stetoskop
+    • Книга - Buku
+    • Машина - Mobil
+    • Мясо - Daging
+    • Икра - Telur ikan
+    • Фото - Foto
+
+    🔙 Gunakan /materi2 untuk mengulang materi sebelumnya
+    🏠 Gunakan /materi untuk kembali ke menu utama
+    """
+    return materi
 
 async def absen(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handler untuk absen dengan pilihan status dan notifikasi Total Hadir"""
@@ -604,6 +610,7 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Contoh: `/register Andi Wijaya andi@gmail.com`",
             parse_mode='Markdown'
         )
+
 
 
 
