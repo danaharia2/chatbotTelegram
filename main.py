@@ -39,7 +39,7 @@ def main():
             from fiturBot.handlers import (
                 start, status, test_connection, get_my_info, register, absen, test_classroom,
                 admin_help, admin_stats, reset_attendance, force_attendance_check, export_data,
-                manual_kick, list_warnings, classroom_reminder_now, class_reminder_now, check_topics, 
+                manual_kick, list_warnings, list_kehadiran, classroom_reminder_now, class_reminder_now, check_topics, 
                 materi, materi1, materi2, start_auto_reminder, stop_auto_reminder, test_auto_reminder
             )
             
@@ -61,6 +61,7 @@ def main():
                 ("export_data", export_data),
                 ("manual_kick", manual_kick),
                 ("list_warnings", list_warnings),
+                ("list_kehadiran", list_kehadiran),
                 ("classroom_reminder", classroom_reminder_now),
                 ("test_classroom", test_classroom),
                 ("class_reminder", class_reminder_now),
@@ -148,6 +149,7 @@ def main():
 
 if __name__ == '__main__':
     main()
+
 
 
 
