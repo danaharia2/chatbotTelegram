@@ -9,6 +9,7 @@ from config import ADMIN_IDS
 from datetime import datetime, timedelta, timezone
 
 WIB = timezone(timedelta(hours=7))
+
 logger = logging.getLogger(__name__)
 
 # State management untuk quiz
@@ -52,8 +53,9 @@ def initialize_sample_questions():
     questions_db.extend(sample_questions)
 
 # Format waktu seperti di screenshot (HH:MM)
-def format_time(WIB):
-    return datetime.now().strftime("%H:%M")
+def format_time():
+    now_wib = datetime.now(WIB)
+    return now_wib.strftime("%H:%M")
 
 # Command /quiz - Menu utama quiz
 async def quiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -180,7 +182,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handler untuk /start - menampilkan pesan welcome dengan menu"""
     welcome_text = (
         "🤖 **Bot Tebak-Tebakan**\n\n"
-        "Halo, ayo kita main tebak-tebakan. Kamu bisa tambahkan bot ini ke grup kamu.\n\n"
+        "Halo, ayo kita main tebak-tebakan. Kamu bisa menggunakan bot ini secara private.\n\n"
         "**Gunakan menu commands atau ketik perintah:**\n"
         "• /mulai - mulai game tebak-tebakan\n"
         "• /help - bantuan dan panduan\n"
