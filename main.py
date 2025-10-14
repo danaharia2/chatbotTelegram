@@ -3,7 +3,7 @@ import logging
 import traceback
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters
 from datetime import time
-from telegram import BotCommand, BotCommandScopeAllPrivateChats
+from telegram import BotCommand, BotCommandScopeAllPrivateChats, BotCommandScopeAllGroupChats
 
 # Setup logging
 logging.basicConfig(
@@ -14,30 +14,65 @@ logger = logging.getLogger(__name__)
 
 async def setup_bot_commands(application):
     """Setup bot commands menu untuk semua user"""
-    commands = [
-        BotCommand("start", "Memulai Bot"),
-        BotCommand("help", "Membuka pesan bantuan"),
-        BotCommand("quiz", "Menu utama tebak-tebakan"),
-        BotCommand("mulai", "Memulai permainan"),
-        BotCommand("nyerah", "Menyerah dari pertanyaan"),
-        BotCommand("next", "Pertanyaan berikutnya"),
-        BotCommand("skor", "Melihat skor saat ini"),
-        BotCommand("poin", "Melihat poin kamu"),
-        BotCommand("topskor", "Melihat 10 pemain teratas"),
-        BotCommand("aturan", "Melihat aturan bermain"),
-        BotCommand("donasi", "Dukungan untuk bot"),
-        BotCommand("lapor", "Laporkan pertanyaan"),
-    ]
     try:
+        # Commands untuk private chats
+        private_commands = [
+            BotCommand("start", "Memulai Bot"),
+            BotCommand("help", "Membuka pesan bantuan"),
+            BotCommand("mulai", "Memulai permainan"),
+            BotCommand("nyerah", "Menyerah dari pertanyaan"),
+            BotCommand("next", "Pertanyaan berikutnya"),
+            BotCommand("skor", "Melihat skor saat ini"),
+            BotCommand("poin", "Melihat poin kamu"),
+            BotCommand("topskor", "Melihat 10 pemain teratas"),
+            BotCommand("aturan", "Melihat aturan bermain"),
+            BotCommand("donasi", "Dukungan untuk bot"),
+            BotCommand("lapor", "Laporkan pertanyaan"),
+            BotCommand("quiz", "Menu utama tebak-tebakan"),
+        ]
+        # Commands untuk group chats (lebih sedikit, karena di group biasanya hanya command utama)
+        group_commands = [
+            BotCommand("mulai", "Memulai permainan"),
+            BotCommand("skor", "Melihat skor saat ini"),
+            BotCommand("topskor", "Melihat 10 pemain teratas"),
+            BotCommand("aturan", "Melihat aturan bermain"),
+            BotCommand("help", "Membuka pesan bantuan"),
+            BotCommand("quiz", "Menu utama tebak-tebakan"),
+        ]
+        # Admin commands (tambahkan buat untuk admin)
+        admin_commands = private_commands + [BotCommand("buat", "Buat pertanyaan (Admin)")]
+
+        # Set commands untuk private chats
         await application.bot.set_my_commands(
-            commands, 
+            private_commands,
             scope=BotCommandScopeAllPrivateChats()
         )
-        logger.info("✅ Bot commands menu setup completed")
+        logger.info("✅ Private chat commands setup completed")
 
-    except Exception as e:
+        # Set commands untuk group chats
+        await application.bot.set_my_commands(
+            group_commands,
+            scope=BotCommandScopeAllGroupChats()
+        )
+        logger.info("✅ Group chat commands setup completed")
+
+        # Set commands khusus untuk admin
+        from config import ADMIN_IDS
+        from telegram import BotCommandScopeChat
+        
+        for admin_id in ADMIN_IDS:
+            try:
+                await application.bot.set_my_commands(
+                    admin_commands,
+                    scope=BotCommandScopeChat(admin_id)
+                )
+                logger.info(f"✅ Admin commands setup for {admin_id}")
+                
+            except Exception as e:
+                logger.warning(f"⚠️ Could not set admin commands for {admin_id}: {e}")
+        except Exception as e:
         logger.error(f"❌ Error setting bot commands: {e}")
-
+    
 def main():
     """Main function - synchronous version"""
     try:
@@ -187,6 +222,7 @@ def main():
 
 if __name__ == '__main__':
     main()
+
 
 
 
