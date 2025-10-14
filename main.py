@@ -3,6 +3,7 @@ import logging
 import traceback
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters
 from datetime import time
+from telegram import BotCommand, BotCommandScopeAllPrivateChats
 
 # Setup logging
 logging.basicConfig(
@@ -186,6 +187,7 @@ def main():
 
 if __name__ == '__main__':
     main()
+
 
 
 
