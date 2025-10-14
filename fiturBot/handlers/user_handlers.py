@@ -161,7 +161,6 @@ async def materi2(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def materi3(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Materi 3: Profesi, Huruf Sirilik Baru, dan Kata Ganti"""
-    
     message = (
         "<b> MATERI 3: PROFESI, HURUF SIRILIK BARU, DAN KATA GANTI</b>\n\n"
 
@@ -605,6 +604,7 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Contoh: `/register Andi Wijaya andi@gmail.com`",
             parse_mode='Markdown'
         )
+
 
 
 
