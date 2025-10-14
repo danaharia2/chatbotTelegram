@@ -404,9 +404,9 @@ async def quiz_donate(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "❤️ **Donasi**\n\n"
             "Dukung pengembangan bot ini agar tetap aktif!\n\n"
             "**Metode Pembayaran:**\n"
-            "• **QRIS** (Scan gambar di bawah)\n"
-            "• **Dana:** 081234567890\n"
-            "• **OVO:** 081234567890\n\n"
+            "• QRIS (Scan gambar di bawah)\n"
+            "• Dana: 083180442386\n"
+            "• Seabank: 901960516142\n\n"
             "Terima kasih atas donasinya! ❤️"
         )
         
