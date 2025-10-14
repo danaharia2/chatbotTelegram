@@ -35,8 +35,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/test - Test koneksi Google Sheets\n"
         "/myinfo - Lihat info Anda\n"
         "/register - Buat pendaftaran ke sistem\n"
-        "/quiz_leaderboard - Lihat peringkat global\n"
-        "/my_quiz_stats - Statistik quiz pribadi\n"
+        "/quiz - Ayuk mulai quiz\n"
     )
 
     #Tambahkan perintah admin jika user adalah admin
@@ -60,8 +59,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "• `/manual_kick 123456789 Alpha 3x` - Kick murid\n"
             "• Gunakan `/force_check` untuk tes auto-kick\n"
             "• /get_members - Dapatkan data lengkap semua member grup\n"
-            "• /get_ids - Dapatkan hanya ID member (lebih cepat)\n"
-            "/quiz_help - Melihat info tentang quiz\n"
             )
         
         message += (
@@ -611,6 +608,7 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Contoh: `/register Andi Wijaya andi@gmail.com`",
             parse_mode='Markdown'
         )
+
 
 
 
