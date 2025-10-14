@@ -308,11 +308,7 @@ async def show_score(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     score = user_scores.get(user_id, 0)
     await update.message.reply_text(f"📊 Skor Anda: {score}")
-   usernamedef show_points(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    points = user_scores.get(user_id, 0)
-    await update.message.reply_text(f"⭐ Poin Anda: {points}")
-
+   
 async def top_score(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not user_scores:
         await update.message.reply_text("📊 Belum ada skor yang tercatat.")
