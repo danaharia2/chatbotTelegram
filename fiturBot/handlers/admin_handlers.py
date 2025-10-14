@@ -347,20 +347,21 @@ async def admin_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "👑 PANDUAN PERINTAH ADMIN\n\n"
         
         "📊 MANAJEMEN DATA:\n"
-        "• `/admin_stats` - Lihat statistik lengkap\n"
-        "• `/export_data` - Export data ke CSV\n"
-        "• `/list_warnings` - Lihat daftar peringatan\n\n"
+        "• /admin_stats - Lihat statistik lengkap\n"
+        "• /export_data - Export data ke CSV\n"
+        "• /list_warnings - Lihat daftar peringatan\n"
+        "• /list_kehadiran - Kirim laporan kehadiran ke grup\n\n"
         
         "🔄 RESET & MAINTENANCE:\n"
-        "• `/reset_attendance confirm` - Reset SEMUA data kehadiran\n"
-        "• `/force_check` - Paksa pengecekan kehadiran otomatis\n\n"
+        "• /reset_attendance confirm - Reset SEMUA data kehadiran\n"
+        "• /force_check - Paksa pengecekan kehadiran otomatis\n\n"
         
         "👤 MANAJEMEN MURID:\n"
         "• `/manual_kick 123456789 Alasan` - Keluarkan murid manual\n"
         "   Contoh: `/manual_kick 123456789 Alpha 3 kali`\n\n"
         
         "🔔 SISTEM REMINDER:\n"
-        "• `/classroom_reminder` - Kirim reminder tugas sekarang\n"
+        "• /classroom_reminder - Kirim reminder tugas sekarang\n"
         "**Langkah-langkahnya:**\n"
         "1. **Tambahkan kolom Email** di spreadsheet\n"
         "2. **Isi email siswa** yang sesuai dengan email Google Classroom mereka\n"
@@ -373,8 +374,8 @@ async def admin_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "• `/class_reminder` - Kirim reminder kelas sekarang\n\n"
         
         "⚙️ SISTEM & INFO:\n"
-        "• `/check_topics` - Cek informasi topik grup\n"
-        "• `/test` - Test koneksi Google Sheets\n\n"
+        "• /check_topics - Cek informasi topik grup\n"
+        "• /test - Test koneksi Google Sheets\n\n"
         
         "📋 FITUR OTOMATIS:\n"
         "• Auto-kick: Alpha 3x atau Izin 3x\n"
@@ -581,6 +582,7 @@ async def classroom_reminder_now(update: Update, context: ContextTypes.DEFAULT_T
     except Exception as e:
         logger.error(f"Error in classroom reminder: {e}")
         await update.message.reply_text(f"❌ Error: {str(e)}")
+
 
 
 
