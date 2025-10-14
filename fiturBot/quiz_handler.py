@@ -28,9 +28,9 @@ class Question:
 def initialize_sample_questions():
     sample_questions = [
         Question(
-            "Sebutkan bagian tubuh wanita yang paling disukai cowok?",
-            ["bibir", "dada", "mata", "rambut", "paha", "pantat", "pipi", "leher"],
-            ["bibir", "dada", "mata", "rambut", "paha", "pantat", "pipi", "leher"]
+            "Sebutkan apa saja huruf jebakan?",
+            ["Х", "В", "С", "Р", "У", "Е", "Н"],
+            ["Х", "Х", "С", "Р", "У", "Е", "Н"]
         ),
         Question(
             "Sebutkan kota besar di Indonesia?",
@@ -170,6 +170,63 @@ async def quiz_help_command(update, context):
     else:
         await update.message.reply_text(help_text)
 
+async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handler untuk /start - menampilkan pesan welcome dengan menu"""
+    welcome_text = (
+        "🤖 **Bot Tebak-Tebakan**\n\n"
+        "Halo, ayo kita main tebak-tebakan. Kamu bisa tambahkan bot ini ke grup kamu.\n\n"
+        "**Gunakan menu commands atau ketik perintah:**\n"
+        "• /mulai - mulai game tebak-tebakan\n"
+        "• /help - bantuan dan panduan\n"
+        "• /aturan - aturan bermain\n"
+        "• /quiz - menu interaktif\n"
+        "• /donasi - dukung bot ini\n\n"
+        "Selamat bermain! 🎮"
+    )
+    
+    # Tambahkan inline keyboard untuk akses cepat
+    keyboard = [
+        [InlineKeyboardButton("🎮 Mulai Game", callback_data="quiz_start")],
+        [InlineKeyboardButton("📖 Bantuan", callback_data="quiz_help")],
+        [InlineKeyboardButton("📚 Aturan", callback_data="quiz_rules")],
+    ]
+    
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await update.message.reply_text(welcome_text, reply_markup=reply_markup)
+
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handler untuk /help - menampilkan pesan bantuan lengkap seperti di screenshot"""
+    help_text = (
+        "🤖 **Bot Tebak-Tebakan**\n\n"
+        "Halo, ayo kita main tebak-tebakan. Kamu bisa tambahkan bot ini ke grup kamu.\n\n"
+        "**Perintah yang tersedia:**\n\n"
+        "**Memulai Bot**\n"
+        "/start\n\n"
+        "**Membuka pesan bantuan**\n" 
+        "/help\n\n"
+        "**Memulai permainan**\n"
+        "/mulai\n\n"
+        "**Menyerah dari pertanyaan**\n"
+        "/nyerah\n\n"
+        "**Pertanyaan berikutnya**\n"
+        "/next\n\n"
+        "**Melihat skor saat ini**\n"
+        "/skor\n\n"
+        "**Melihat poin kamu**\n"
+        "/poin\n\n"
+        "**Melihat 10 pemain teratas**\n"
+        "/topskor\n\n"
+        "**Melihat aturan bermain**\n"
+        "/aturan\n\n"
+        "**Dukungan untuk bot**\n"
+        "/donasi\n\n"
+        "**Laporkan pertanyaan**\n"
+        "/lapor"
+    )
+    
+    await update.message.reply_text(help_text)
+    
 async def start_quiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     user_id = update.effective_user.id
