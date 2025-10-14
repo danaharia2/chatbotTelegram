@@ -584,6 +584,162 @@ async def classroom_reminder_now(update: Update, context: ContextTypes.DEFAULT_T
         logger.error(f"Error in classroom reminder: {e}")
         await update.message.reply_text(f"❌ Error: {str(e)}")
 
+async def get_all_member_ids(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Dapatkan ID Telegram semua member di group - ADMIN ONLY"""
+    try:
+        user_id = update.effective_user.id
+        
+        # Cek apakah user adalah admin
+        if user_id not in ADMIN_IDS:
+            await update.message.reply_text("❌ Hanya admin yang bisa menggunakan perintah ini.")
+            return
+
+        await update.message.reply_text("🔄 Mengumpulkan data member group...")
+
+        # Inisialisasi list untuk menyimpan data member
+        members_data = []
+        total_members = 0
+
+        try:
+            # Dapatkan informasi tentang chat (group)
+            chat = await context.bot.get_chat(GROUP_CHAT_ID)
+            
+            # Dapatkan semua member (perlu bot menjadi admin dengan permission melihat member)
+            async for member in context.bot.get_chat_members(GROUP_CHAT_ID):
+                total_members += 1
+                user = member.user
+                
+                # Simpan data member
+                member_info = {
+                    'user_id': user.id,
+                    'first_name': user.first_name or '',
+                    'last_name': user.last_name or '',
+                    'username': user.username or 'Tidak ada',
+                    'status': member.status
+                }
+                members_data.append(member_info)
+                
+                # Log setiap 10 member untuk monitoring progress
+                if total_members % 10 == 0:
+                    logger.info(f"Collected {total_members} members so far...")
+
+        except Exception as e:
+            logger.error(f"Error getting chat members: {e}")
+            await update.message.reply_text(
+                f"❌ Gagal mengambil data member: {str(e)}\n\n"
+                "Pastikan:\n"
+                "• Bot adalah admin di group\n"
+                "• Bot memiliki permission 'View Members'\n"
+                "• Group tidak terlalu besar (>10k members)"
+            )
+            return
+
+        # Format hasil
+        if members_data:
+            # Buat file teks dengan data member
+            file_content = "📊 DATA MEMBER GROUP\n\n"
+            file_content += f"Total Member: {total_members}\n"
+            file_content += f"Group: {chat.title if chat else 'Unknown'}\n"
+            file_content += f"Tanggal: {update.message.date.strftime('%d/%m/%Y %H:%M')}\n\n"
+            file_content += "="*50 + "\n\n"
+            
+            # Urutkan berdasarkan user_id
+            members_data.sort(key=lambda x: x['user_id'])
+            
+            for i, member in enumerate(members_data, 1):
+                file_content += f"{i}. 👤 {member['first_name']} {member['last_name']}\n"
+                file_content += f"   🆔 ID: {member['user_id']}\n"
+                file_content += f"   📛 Username: @{member['username']}\n"
+                file_content += f"   📊 Status: {member['status']}\n"
+                file_content += "-" * 30 + "\n"
+
+            # Kirim sebagai file teks
+            filename = f"member_ids_{update.message.date.strftime('%Y%m%d_%H%M')}.txt"
+            
+            await update.message.reply_document(
+                document=io.BytesIO(file_content.encode('utf-8')),
+                filename=filename,
+                caption=(
+                    f"✅ Berhasil mengumpulkan {total_members} member!\n\n"
+                    f"📊 Statistik:\n"
+                    f"• Total: {total_members} member\n"
+                    f"• Group: {chat.title if chat else 'Unknown'}\n"
+                    f"• Admin: {update.effective_user.first_name}"
+                )
+            )
+
+            # Juga kirim ringkasan di chat
+            summary_message = (
+                f"📊 **RINGKASAN DATA MEMBER**\n\n"
+                f"• 👥 Total Member: {total_members}\n"
+                f"• 💬 Nama Group: {chat.title if chat else 'Unknown'}\n"
+                f"• 📁 File terlampir berisi detail lengkap\n\n"
+                f"💡 **Tips:**\n"
+                f"• Gunakan ID untuk pendaftaran manual\n"
+                f"• File berisi username untuk mention\n"
+                f"• Status member: creator/admin/member/restricted/etc"
+            )
+            
+            await update.message.reply_text(summary_message, parse_mode='Markdown')
+
+        else:
+            await update.message.reply_text("❌ Tidak ada data member yang berhasil dikumpulkan.")
+
+    except Exception as e:
+        logger.error(f"Error in get_all_member_ids: {e}")
+        await update.message.reply_text(f"❌ Error: {str(e)}")
+
+# Versi alternatif yang lebih sederhana (hanya ID saja)
+async def get_simple_member_ids(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Dapatkan hanya ID member saja - lebih cepat"""
+    try:
+        user_id = update.effective_user.id
+        
+        if user_id not in ADMIN_IDS:
+            await update.message.reply_text("❌ Hanya admin yang bisa menggunakan perintah ini.")
+            return
+
+        await update.message.reply_text("🔄 Mengumpulkan ID member...")
+
+        member_ids = []
+        total_members = 0
+
+        try:
+            async for member in context.bot.get_chat_members(GROUP_CHAT_ID):
+                total_members += 1
+                member_ids.append(str(member.user.id))
+                
+        except Exception as e:
+            logger.error(f"Error getting chat members: {e}")
+            await update.message.reply_text(f"❌ Gagal: {str(e)}")
+            return
+
+        if member_ids:
+            # Format sebagai list sederhana
+            file_content = "ID Member Group:\n\n" + "\n".join(member_ids)
+            
+            filename = f"member_ids_simple_{update.message.date.strftime('%Y%m%d_%H%M')}.txt"
+            
+            await update.message.reply_document(
+                document=io.BytesIO(file_content.encode('utf-8')),
+                filename=filename,
+                caption=f"✅ {total_members} ID member berhasil dikumpulkan"
+            )
+            
+            # Juga kirim 10 ID pertama sebagai preview
+            preview_ids = "\n".join(member_ids[:10])
+            preview_message = (
+                f"📋 Preview (10 dari {total_members}):\n```\n{preview_ids}\n```\n\n"
+                f"📁 File lengkap terlampir"
+            )
+            
+            await update.message.reply_text(preview_message, parse_mode='Markdown')
+        else:
+            await update.message.reply_text("❌ Tidak ada ID member yang berhasil dikumpulkan.")
+
+    except Exception as e:
+        logger.error(f"Error in get_simple_member_ids: {e}")
+        await update.message.reply_text(f"❌ Error: {str(e)}")
 
 
 
