@@ -22,7 +22,7 @@ class Question:
         self.options = options
         self.created_by = None
 
-# Inisialisasi beberapa pertanyaan contoh
+# Inisialisasi beberapa pertanyaan
 def initialize_sample_questions():
     sample_questions = [
         Question(
