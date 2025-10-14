@@ -12,8 +12,8 @@ from fiturBot.quiz_handler import (
 __all__ = [
     'start', 'absen', 'status', 'test_connection', 'get_my_info', 'register', 'test_topic',
     'admin_stats', 'admin_help', 'reset_attendance', 'force_attendance_check', 'export_data',
-    'manual_kick', 'list_warnings', 'list_kehadiran', 'classroom_reminder_now', 'class_reminder_now', 'check_topics', 'test_classroom', 'materi', 'materi1', 'materi2', 'start_auto_reminder', 'stop_auto_reminder', 'test_auto_reminder', 'quiz_help',
-    'create_quiz', 'materi3',
+    'manual_kick', 'list_warnings', 'list_kehadiran', 'classroom_reminder_now', 'class_reminder_now', 'check_topics', 'test_classroom', 'materi', 'materi1', 'materi2', 'materi3', 'start_auto_reminder', 'stop_auto_reminder', 'test_auto_reminder', 'quiz_help',
+    'create_quiz',
     'list_quizzes',
     'start_quiz',
     'next_question',
@@ -23,6 +23,7 @@ __all__ = [
     'handle_quiz_callback',
     'handle_quiz_message',
 ]
+
 
 
 
