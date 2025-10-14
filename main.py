@@ -70,8 +70,8 @@ async def setup_bot_commands(application):
                 
             except Exception as e:
                 logger.warning(f"⚠️ Could not set admin commands for {admin_id}: {e}")
-        except Exception as e:
-            logger.error(f"❌ Error setting bot commands: {e}")
+    except Exception as e:
+        logger.error(f"❌ Error setting bot commands: {e}")
     
 def main():
     """Main function - synchronous version"""
@@ -222,6 +222,7 @@ def main():
 
 if __name__ == '__main__':
     main()
+
 
 
 
