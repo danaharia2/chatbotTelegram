@@ -155,7 +155,7 @@ async def quiz_callback_handler(update: Update, context: ContextTypes.DEFAULT_TY
     
     if callback_data == "quiz_help":
         await quiz_help_command(query, context)
-    elif callback_data == "async_quiz":
+    elif callback_data == "start_quiz":
         await start_quiz(query, context)
     elif callback_data == "quiz_surrender":
         await surrender_quiz(query, context)
