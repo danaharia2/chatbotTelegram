@@ -11,6 +11,32 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+async def setup_bot_commands(application):
+    """Setup bot commands menu untuk semua user"""
+    commands = [
+        BotCommand("start", "Memulai Bot"),
+        BotCommand("help", "Membuka pesan bantuan"),
+        BotCommand("quiz", "Menu utama tebak-tebakan"),
+        BotCommand("mulai", "Memulai permainan"),
+        BotCommand("nyerah", "Menyerah dari pertanyaan"),
+        BotCommand("next", "Pertanyaan berikutnya"),
+        BotCommand("skor", "Melihat skor saat ini"),
+        BotCommand("poin", "Melihat poin kamu"),
+        BotCommand("topskor", "Melihat 10 pemain teratas"),
+        BotCommand("aturan", "Melihat aturan bermain"),
+        BotCommand("donasi", "Dukungan untuk bot"),
+        BotCommand("lapor", "Laporkan pertanyaan"),
+    ]
+    try:
+        await application.bot.set_my_commands(
+            commands, 
+            scope=BotCommandScopeAllPrivateChats()
+        )
+        logger.info("✅ Bot commands menu setup completed")
+
+    except Exception as e:
+        logger.error(f"❌ Error setting bot commands: {e}")
+
 def main():
     """Main function - synchronous version"""
     try:
@@ -33,6 +59,9 @@ def main():
         
         # Create application
         application = Application.builder().token(BOT_TOKEN).build()
+        
+        # Setup bot commands menu
+        application.post_init = setup_bot_commands
         
         # Import handlers
         try:
@@ -88,7 +117,7 @@ def main():
         # Import dan setup quiz handlers
         try:
             from fiturBot.quiz_handler import (
-                quiz, quiz_callback_handler, handle_quiz_message,
+                start_command, help_command, quiz, quiz_callback_handler, handle_quiz_message,
                 quiz_help, start_quiz, surrender_quiz, next_question, 
                 show_score, show_points, top_score, quiz_rules, 
                 quiz_donate, quiz_report, create_question_start
@@ -97,8 +126,9 @@ def main():
             
             # Add quiz command handlers
             quiz_commands = [
+                 ("start", start_command),
+                 ("help", help_command),
                  ("quiz", quiz),
-                 ("help", quiz_help),
                  ("mulai", start_quiz),
                  ("nyerah", surrender_quiz),
                  ("next", next_question),
@@ -108,6 +138,7 @@ def main():
                  ("aturan", quiz_rules),
                  ("donasi", quiz_donate),
                  ("lapor", quiz_report),
+                 ("buat", create_question_start),  # Hanya admin yang bisa akses
              ]
             
             for command, handler in quiz_commands:
@@ -155,6 +186,7 @@ def main():
 
 if __name__ == '__main__':
     main()
+
 
 
 
