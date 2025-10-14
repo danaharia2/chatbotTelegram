@@ -121,7 +121,7 @@ async def quiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     
     keyboard = [
-        [InlineKeyboardButton("🎮 Mulai Game", callback_data="quiz_start")],
+        [InlineKeyboardButton("🎮 Mulai Game", callback_data="start_quiz")],
         [InlineKeyboardButton("📖 Bantuan", callback_data="quiz_help")],
         [InlineKeyboardButton("📊 Skor Saya", callback_data="quiz_score")],
         [InlineKeyboardButton("🏆 Top Skor", callback_data="quiz_topscore")],
@@ -155,7 +155,7 @@ async def quiz_callback_handler(update: Update, context: ContextTypes.DEFAULT_TY
     
     if callback_data == "quiz_help":
         await quiz_help_command(query, context)
-    elif callback_data == "quiz_start":
+    elif callback_data == "async_quiz":
         await start_quiz(query, context)
     elif callback_data == "quiz_surrender":
         await surrender_quiz(query, context)
@@ -203,7 +203,7 @@ async def quiz_help_command(update, context):
     else:
         await update.message.reply_text(help_text)
 
-async def quiz_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def start_quiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     chat_id = update.effective_chat.id
     
