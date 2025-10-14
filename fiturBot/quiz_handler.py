@@ -1,10 +1,11 @@
 # quiz_handler.py
 import logging
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, BotCommand
 from telegram.ext import ContextTypes, CommandHandler, CallbackQueryHandler, MessageHandler, filters
 from config import ADMIN_IDS
 import random
 import time
+import asyncio
 
 logger = logging.getLogger(__name__)
 
@@ -30,34 +31,119 @@ def initialize_sample_questions():
     ]
     questions_db.extend(sample_questions)
 
-# Command /quiz - Menu utama quiz
+# Fungsi untuk setup bot commands (menu)
+async def setup_bot_commands(application):
+    """Setup bot commands menu"""
+    commands = [
+        BotCommand("start", "Memulai Bot"),
+        BotCommand("help", "Membuka pesan bantuan"),
+        BotCommand("mulai", "Memulai permainan"),
+        BotCommand("nyerah", "Menyerah dari pertanyaan"),
+        BotCommand("next", "Pertanyaan berikutnya"),
+        BotCommand("skor", "Melihat skor saat ini"),
+        BotCommand("poin", "Melihat poin kamu"),
+        BotCommand("topskor", "Melihat 10 pemain teratas"),
+        BotCommand("aturan", "Melihat aturan bermain"),
+        BotCommand("donasi", "Dukungan untuk bot"),
+        BotCommand("lapor", "Laporkan pertanyaan"),
+    ]
+    
+    # Tambahkan command buat hanya untuk admin
+    admin_commands = commands + [BotCommand("buat", "Buat pertanyaan (Admin)")]
+    
+    try:
+        # Set commands untuk semua user
+        await application.bot.set_my_commands(commands)
+        logger.info("✅ Bot commands menu setup completed")
+        
+        # Set commands khusus untuk admin (optional)
+        for admin_id in ADMIN_IDS:
+            try:
+                await application.bot.set_my_commands(
+                    admin_commands, 
+                    scope=BotCommandScopeChat(admin_id)
+                )
+            except Exception as e:
+                logger.warning(f"⚠️ Could not set admin commands for {admin_id}: {e}")
+                
+    except Exception as e:
+        logger.error(f"❌ Error setting bot commands: {e}")
+
+# Modifikasi fungsi start untuk menampilkan pesan welcome
+async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handler untuk /start - menampilkan pesan welcome"""
+    welcome_text = (
+        "🤖 **Quiz Tebak-Tebakan**\n\n"
+        "Halo, ayo kita main tebak-tebakan. Kamu juga bisa main sendiri dengan chat botnya langsung\n"
+        "Gunakan menu di bawah atau ketik perintah:\n"
+        "• /help - melihat bantuan\n" 
+        "• /mulai - mulai game\n"
+        "• /aturan - aturan bermain\n"
+        "• /donasi - dukung bot ini"
+    )
+    
+    await update.message.reply_text(welcome_text)
+
+# Modifikasi fungsi help untuk menampilkan pesan seperti di screenshot
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handler untuk /help - menampilkan pesan bantuan lengkap"""
+    help_text = (
+        "🤖 **Quiz Tebak-Tebakan**\n\n"
+        "Halo, ayo kita main tebak-tebakan. Kamu juga bisa main sendiri dengan chat botnya langsung\n"
+        "**Perintah yang tersedia:**\n\n"
+        "**Memulai Bot**\n"
+        "/start\n\n"
+        "**Membuka pesan bantuan**\n" 
+        "/help\n\n"
+        "**Memulai permainan**\n"
+        "/mulai\n\n"
+        "**Menyerah dari pertanyaan**\n"
+        "/nyerah\n\n"
+        "**Pertanyaan berikutnya**\n"
+        "/next\n\n"
+        "**Melihat skor saat ini**\n"
+        "/skor\n\n"
+        "**Melihat poin kamu**\n"
+        "/poin\n\n"
+        "**Melihat 10 pemain teratas**\n"
+        "/topskor\n\n"
+        "**Melihat aturan bermain**\n"
+        "/aturan\n\n"
+        "**Dukungan untuk bot**\n"
+        "/donasi"
+    )
+    
+    await update.message.reply_text(help_text)
+
+# Modifikasi fungsi quiz untuk menggunakan inline keyboard
 async def quiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handler untuk /quiz - Menu utama dengan inline keyboard"""
     user_id = update.effective_user.id
     
     keyboard = [
-        [InlineKeyboardButton("📖 Bantuan", callback_data="quiz_help")],
         [InlineKeyboardButton("🎮 Mulai Game", callback_data="quiz_start")],
-        [InlineKeyboardButton("🏃 Menyerah", callback_data="quiz_surrender")],
-        [InlineKeyboardButton("➡️ Pertanyaan Berikutnya", callback_data="quiz_next")],
-        [InlineKeyboardButton("📊 Skor Saat Ini", callback_data="quiz_score")],
-        [InlineKeyboardButton("⭐ Poin Saya", callback_data="quiz_points")],
-        [InlineKeyboardButton("🏆 Top Skor Global", callback_data="quiz_topscore")],
-        [InlineKeyboardButton("📚 Aturan Bermain", callback_data="quiz_rules")],
-        [InlineKeyboardButton("❤️ Donasi", callback_data="quiz_donate")],
-        [InlineKeyboardButton("⚠️ Laporkan Pertanyaan", callback_data="quiz_report")],
+        [InlineKeyboardButton("📖 Bantuan", callback_data="quiz_help")],
+        [InlineKeyboardButton("📊 Skor Saya", callback_data="quiz_score")],
+        [InlineKeyboardButton("🏆 Top Skor", callback_data="quiz_topscore")],
+        [InlineKeyboardButton("📚 Aturan", callback_data="quiz_rules")],
     ]
     
     # Hanya admin yang bisa melihat tombol buat pertanyaan
     if user_id in ADMIN_IDS:
         keyboard.append([InlineKeyboardButton("✏️ Buat Pertanyaan", callback_data="quiz_create")])
     
+    keyboard.extend([
+        [InlineKeyboardButton("❤️ Donasi", callback_data="quiz_donate")],
+        [InlineKeyboardButton("⚠️ Laporkan", callback_data="quiz_report")]
+    ])
+    
     reply_markup = InlineKeyboardMarkup(keyboard)
     
     await update.message.reply_text(
-        "🤖 **Bot Tebak-Tebakan**\n\n"
-        "Pilih menu di bawah untuk bermain tebak-tebakan!",
+        "🎯 **Menu Utama Bot Tebak-Tebakan**\n\n"
+        "Pilih aksi yang ingin dilakukan:",
         reply_markup=reply_markup
-    )
+        )
 
 # Handler untuk callback queries
 async def quiz_callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -99,7 +185,7 @@ async def quiz_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def quiz_help_command(update, context):
     help_text = (
-        "🤖 **Bot Tebak-Tebakan - Bantuan**\n\n"
+        "🤖 **Quiz Tebak-Tebakan - Bantuan**\n\n"
         "**Perintah yang tersedia:**\n"
         "/mulai - Mulai game tebak-tebakan\n"
         "/nyerah - Menyerah dari game\n"
@@ -224,8 +310,8 @@ async def quiz_donate(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "❤️ **Donasi**\n\n"
         "Dukung pengembangan bot ini agar tetap aktif!\n\n"
         "**QRIS:** [Tampilkan QRIS]\n"
-        "**Dana:** 081234567890\n"
-        "**OVO:** 081234567890\n\n"
+        "**Dana:** 083180442386\n"
+        "**Seabank:** xxx\n\n"
         "Terima kasih atas donasinya! ❤️"
     )
     await update.message.reply_text(donate_text)
